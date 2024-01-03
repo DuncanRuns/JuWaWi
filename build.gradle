@@ -17,7 +17,7 @@ repositories {
 
 dependencies {
     // Choose Julti version: https://jitpack.io/#DuncanRuns/Julti
-    implementation 'com.github.DuncanRuns:Julti:v1.0.2'
+    implementation 'com.github.DuncanRuns:Julti:17383e3f27'
 }
 
 
