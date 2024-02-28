@@ -3,6 +3,7 @@ package xyz.duncanruns.juwawi.window;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.WinDef.*;
 import sun.awt.windows.WComponentPeer;
+import xyz.duncanruns.julti.instance.InstanceState;
 import xyz.duncanruns.julti.instance.MinecraftInstance;
 import xyz.duncanruns.julti.management.InstanceManager;
 import xyz.duncanruns.julti.resetting.ResetHelper;
@@ -29,22 +30,29 @@ import java.util.stream.Collectors;
 import static xyz.duncanruns.julti.util.SleepUtil.sleep;
 
 public class JuWaWi extends NoRepaintJFrame {
-
     private static final HBRUSH BLACK_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(4));
     private static final HBRUSH WHITE_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(0));
     private static final UINT WHITE = new UINT(0xFFFFFF);
-
     private final List<Rectangle> clearScreenRequestList;
-    private final Queue<MinecraftInstance> toUpdate = new LinkedList<>();
     private final Executor drawExecutor = Executors.newSingleThreadExecutor();
+
+    // Configuration
+    private final List<Byte> percentUpdates = Arrays.asList((byte) 5, (byte) 15);
+    private final int width, height;
+
+    // State
+    private final Queue<MinecraftInstance> toUpdate = new LinkedList<>();
+    private boolean shouldRefresh = false;
+
+    // Tracking
+    private final Map<MinecraftInstance, Byte> lastInstancePercentages = new HashMap<>();
+    private List<Rectangle> lastPositions = null;
 
 //    private final HDC lockIcon = null;
 //    private int lockWidth, lockHeight;
 
-    private List<Rectangle> lastPositions = null;
     private boolean closed = false;
     private HWND hwnd;
-    final int width, height;
     private HDC bufferHDC;
 
     public JuWaWi(int x, int y, int width, int height) {
@@ -74,18 +82,49 @@ public class JuWaWi extends NoRepaintJFrame {
     public void tick() {
         List<Rectangle> currentInstancePositions = JuWaWi.getCurrentInstancePositions();
 
-        if (this.lastPositions == null || currentInstancePositions.size() != this.lastPositions.size()) {
-            this.lastPositions = currentInstancePositions;
+        if (this.shouldRefresh || this.lastPositions == null || currentInstancePositions.size() != this.lastPositions.size()) {
             this.drawExecutor.execute(() -> this.drawAllInstances(currentInstancePositions));
+            this.shouldRefresh = false;
+            this.lastPositions = currentInstancePositions;
             return;
         }
 
         List<InstanceDrawRequest> toDraw = new ArrayList<>();
         List<Rectangle> toBlack = new ArrayList<>();
 
+        List<MinecraftInstance> instances = InstanceManager.getInstanceManager().getInstances();
+        // Draw instance movements
+        for (int i = 0; i < currentInstancePositions.size(); i++) {
+            // Get info for this instance
+            final Rectangle last = this.lastPositions.get(i);
+            final Rectangle current = currentInstancePositions.get(i);
+            final MinecraftInstance instance = instances.get(i);
+            // Determine if instance has moved
+            if (last.equals(current)) {
+                continue;
+            }
+            // Add draw requests
+            toDraw.add(new InstanceDrawRequest(instance, current));
+            toBlack.add(last);
+            // Prevent duplicate draw request
+            this.toUpdate.remove(instance);
+        }
+        // Remove black draws that will be covered by an instance
+        toDraw.forEach(req -> toBlack.remove(req.rect));
+
+        // Remove draws outside the screen
+        Rectangle screenRect = new Rectangle(this.width, this.height);
+        toDraw.removeIf(req -> !req.rect.intersects(screenRect));
+        toBlack.removeIf(rect -> !rect.intersects(screenRect));
+
+        // Add draw requests from toUpdate
+        this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)))));
+        this.toUpdate.clear();
+
         if (!(toDraw.isEmpty() && toBlack.isEmpty())) {
             this.drawExecutor.execute(() -> this.draw(toDraw, toBlack));
         }
+        this.lastPositions = currentInstancePositions;
     }
 
     private void drawAllInstances(List<Rectangle> instancePositions) {
@@ -95,7 +134,7 @@ public class JuWaWi extends NoRepaintJFrame {
             Rectangle rectangle = instancePositions.get(i);
             requests.add(new InstanceDrawRequest(instances.get(i), rectangle));
         }
-        this.draw(requests, this.clearScreenRequestList);
+        this.drawExecutor.execute(() -> this.draw(requests, this.clearScreenRequestList));
     }
 
     public void finishSetup() {
@@ -201,7 +240,7 @@ public class JuWaWi extends NoRepaintJFrame {
             HDC instanceHDC = User32Extra.INSTANCE.GetDC(request.instance.getHwnd());
             RECT rect = new RECT();
             User32Extra.INSTANCE.GetClientRect(request.instance.getHwnd(), rect);
-            Msimg32.INSTANCE.TransparentBlt(drawHDC, request.x, request.y, request.w, request.h, instanceHDC, 0, 0, rect.right - rect.left, rect.bottom - rect.top, new UINT(GDI32Extra.SRCCOPY));
+            Msimg32.INSTANCE.TransparentBlt(drawHDC, request.rect.x, request.rect.y, request.rect.width, request.rect.height, instanceHDC, 0, 0, rect.right - rect.left, rect.bottom - rect.top, new UINT(GDI32Extra.SRCCOPY));
             User32Extra.INSTANCE.ReleaseDC(request.instance.getHwnd(), instanceHDC);
         }
 
@@ -215,42 +254,51 @@ public class JuWaWi extends NoRepaintJFrame {
     }
 
     public void onAllInstancesFound() {
+        this.shouldRefresh = true;
     }
 
     public void onInstancePercentageChange(MinecraftInstance instance) {
+//        if(true)return;
+        if (!instance.getStateTracker().isCurrentState(InstanceState.PREVIEWING)) {
+            return;
+        }
+        byte lastPercent = this.lastInstancePercentages.getOrDefault(instance, (byte) 0);
+        byte newPercent = instance.getStateTracker().getLoadingPercent();
+        this.percentUpdates.forEach(updatePoint -> {
+            if (lastPercent < updatePoint && newPercent >= updatePoint) {
+//                System.out.println(lastPercent + "->" + newPercent);
+                this.toUpdate.add(instance);
+            }
+        });
+        this.lastInstancePercentages.put(instance, newPercent);
     }
 
     public void onInstanceReset(MinecraftInstance instance) {
+        this.toUpdate.add(instance);
     }
 
     public void onInstanceStateChange(MinecraftInstance instance) {
+        switch (instance.getStateTracker().getInstanceState()) {
+            case WAITING:
+            case PREVIEWING:
+            case INWORLD:
+                this.toUpdate.add(instance);
+                break;
+        }
     }
 
     public static class InstanceDrawRequest {
         private final MinecraftInstance instance;
-        private final int x, y, w, h;
+        private final Rectangle rect;
 
-        /**
-         * @param instance the minecraft instance to draw
-         * @param x        the x destination on the wall window
-         * @param y        the y destination on the wall window
-         * @param w        the width to draw on the wall window
-         * @param h        the height to draw on the wall window
-         */
-        public InstanceDrawRequest(MinecraftInstance instance, int x, int y, int w, int h) {
-            this.instance = instance;
-            this.x = x;
-            this.y = y;
-            this.w = w;
-            this.h = h;
-        }
 
         /**
          * @param instance  the minecraft instance to draw
          * @param rectangle the specified rectangle to draw on the wall window
          */
         public InstanceDrawRequest(MinecraftInstance instance, Rectangle rectangle) {
-            this(instance, rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+            this.instance = instance;
+            this.rect = rectangle;
         }
     }
 }
