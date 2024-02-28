@@ -3,6 +3,7 @@ package xyz.duncanruns.juwawi.window;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.WinDef.*;
 import sun.awt.windows.WComponentPeer;
+import xyz.duncanruns.julti.gui.JultiGUI;
 import xyz.duncanruns.julti.instance.InstanceState;
 import xyz.duncanruns.julti.instance.MinecraftInstance;
 import xyz.duncanruns.julti.management.InstanceManager;
@@ -112,14 +113,14 @@ public class JuWaWi extends NoRepaintJFrame {
         // Remove black draws that will be covered by an instance
         toDraw.forEach(req -> toBlack.remove(req.rect));
 
+        // Add draw requests from toUpdate
+        this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)))));
+        this.toUpdate.clear();
+
         // Remove draws outside the screen
         Rectangle screenRect = new Rectangle(this.width, this.height);
         toDraw.removeIf(req -> !req.rect.intersects(screenRect));
         toBlack.removeIf(rect -> !rect.intersects(screenRect));
-
-        // Add draw requests from toUpdate
-        this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)))));
-        this.toUpdate.clear();
 
         if (!(toDraw.isEmpty() && toBlack.isEmpty())) {
             this.drawExecutor.execute(() -> this.draw(toDraw, toBlack));
