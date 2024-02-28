@@ -179,6 +179,7 @@ public class JuWaWi extends NoRepaintJFrame {
         this.setUndecorated(true);
         this.setResizable(false);
         this.setTitle("JuWaWi");
+        this.setIconImage(JultiGUI.getLogo());
     }
 
     private void makeBufferAndFillBlack() {
