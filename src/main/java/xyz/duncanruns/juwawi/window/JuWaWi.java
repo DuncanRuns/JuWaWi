@@ -24,6 +24,7 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Queue;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -40,6 +41,8 @@ public class JuWaWi extends NoRepaintJFrame {
     // Configuration
     private final List<Byte> percentUpdates = Arrays.asList((byte) 5, (byte) 15);
     private final int width, height;
+    private final boolean showLocked = true;
+    private final int lockedBorderThickness = 10;
 
     // State
     private final Queue<MinecraftInstance> toUpdate = new ConcurrentLinkedQueue<>();
@@ -94,6 +97,7 @@ public class JuWaWi extends NoRepaintJFrame {
         List<Rectangle> toBlack = new ArrayList<>();
 
         List<MinecraftInstance> instances = InstanceManager.getInstanceManager().getInstances();
+        List<MinecraftInstance> locked = ResetHelper.getManager().getLockedInstances();
         // Draw instance movements
         for (int i = 0; i < currentInstancePositions.size(); i++) {
             // Get info for this instance
@@ -105,7 +109,7 @@ public class JuWaWi extends NoRepaintJFrame {
                 continue;
             }
             // Add draw requests
-            toDraw.add(new InstanceDrawRequest(instance, current));
+            toDraw.add(new InstanceDrawRequest(instance, current, locked.contains(instance)));
             toBlack.add(last);
             // Prevent duplicate draw request
             this.toUpdate.remove(instance);
@@ -114,7 +118,7 @@ public class JuWaWi extends NoRepaintJFrame {
         toDraw.forEach(req -> toBlack.remove(req.rect));
 
         // Add draw requests from toUpdate
-        this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)))));
+        this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)), locked.contains(instance))));
         this.toUpdate.clear();
 
         // Remove draws outside the screen
@@ -131,9 +135,10 @@ public class JuWaWi extends NoRepaintJFrame {
     private void drawAllInstances(List<Rectangle> instancePositions) {
         ArrayList<InstanceDrawRequest> requests = new ArrayList<>();
         List<MinecraftInstance> instances = InstanceManager.getInstanceManager().getInstances();
+        List<MinecraftInstance> locked = ResetHelper.getManager().getLockedInstances();
         for (int i = 0; i < instancePositions.size(); i++) {
-            Rectangle rectangle = instancePositions.get(i);
-            requests.add(new InstanceDrawRequest(instances.get(i), rectangle));
+            MinecraftInstance instance = instances.get(i);
+            requests.add(new InstanceDrawRequest(instance, instancePositions.get(i), locked.contains(instance)));
         }
         this.drawExecutor.execute(() -> this.draw(requests, this.clearScreenRequestList));
     }
@@ -221,9 +226,9 @@ public class JuWaWi extends NoRepaintJFrame {
      * @param blackRectangles areas to fill with black
      */
     public synchronized void draw(List<InstanceDrawRequest> requests, List<Rectangle> blackRectangles) {
-        // Draw directly to wall if only 1 instance, or use a buffer if multiple
+        // Draw directly to wall if only 1 request that isn't a locked instance, or use a buffer
 
-        boolean useBuffer = (requests.size() + blackRectangles.size()) > 1;
+        boolean useBuffer = (requests.size() + blackRectangles.size()) > 1 || requests.size() == 1 && requests.get(0).locked;
         HDC wallWindowHDC = User32Extra.INSTANCE.GetDC(this.hwnd);
         HDC drawHDC;
         if (useBuffer) {
@@ -240,9 +245,18 @@ public class JuWaWi extends NoRepaintJFrame {
         // Draw instances
         for (InstanceDrawRequest request : requests) {
             HDC instanceHDC = User32Extra.INSTANCE.GetDC(request.instance.getHwnd());
-            RECT rect = new RECT();
-            User32Extra.INSTANCE.GetClientRect(request.instance.getHwnd(), rect);
-            Msimg32.INSTANCE.TransparentBlt(drawHDC, request.rect.x, request.rect.y, request.rect.width, request.rect.height, instanceHDC, 0, 0, rect.right - rect.left, rect.bottom - rect.top, new UINT(GDI32Extra.SRCCOPY));
+            RECT sourceRect = new RECT();
+            User32Extra.INSTANCE.GetClientRect(request.instance.getHwnd(), sourceRect);
+            Rectangle destRectangle = request.rect;
+            Msimg32.INSTANCE.TransparentBlt(drawHDC, destRectangle.x, destRectangle.y, destRectangle.width, destRectangle.height, instanceHDC, 0, 0, sourceRect.right - sourceRect.left, sourceRect.bottom - sourceRect.top, new UINT(GDI32Extra.SRCCOPY));
+            if (request.locked && this.showLocked && this.lockedBorderThickness > 0) {
+                final int x = destRectangle.x, w = destRectangle.width, b = this.lockedBorderThickness, y = destRectangle.y, h = destRectangle.height;
+                User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x, y, b, h)), JuWaWi.BLACK_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x + b, y, w - (2 * b), b)), JuWaWi.BLACK_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x + w - b, y, b, h)), JuWaWi.BLACK_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x + b, y + h - b, w - (2 * b), b)), JuWaWi.BLACK_BRUSH);
+
+            }
             User32Extra.INSTANCE.ReleaseDC(request.instance.getHwnd(), instanceHDC);
         }
 
@@ -289,18 +303,25 @@ public class JuWaWi extends NoRepaintJFrame {
         }
     }
 
+    public void onInstanceLock(MinecraftInstance instance) {
+        if (this.showLocked) {
+            this.toUpdate.add(instance);
+        }
+    }
+
     public static class InstanceDrawRequest {
         private final MinecraftInstance instance;
         private final Rectangle rect;
-
+        private boolean locked = false;
 
         /**
          * @param instance  the minecraft instance to draw
          * @param rectangle the specified rectangle to draw on the wall window
          */
-        public InstanceDrawRequest(MinecraftInstance instance, Rectangle rectangle) {
+        public InstanceDrawRequest(MinecraftInstance instance, Rectangle rectangle, boolean locked) {
             this.instance = instance;
             this.rect = rectangle;
+            this.locked = locked;
         }
     }
 }

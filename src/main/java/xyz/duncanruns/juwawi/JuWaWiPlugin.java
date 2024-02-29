@@ -69,6 +69,11 @@ public class JuWaWiPlugin implements PluginInitializer {
                 JuWaWiPlugin.juwawi.onInstanceStateChange(instance);
             }
         });
+        PluginEvents.InstanceEventType.LOCK.register(instance -> {
+            if (JuWaWiPlugin.wallWindowExists()) {
+                JuWaWiPlugin.juwawi.onInstanceLock(instance);
+            }
+        });
         if (JuWaWiPlugin.dev) JuWaWiPlugin.openWallWindow();
     }
 
