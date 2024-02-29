@@ -13,12 +13,10 @@ import java.nio.charset.Charset;
 
 public class JuWaWiPlugin implements PluginInitializer {
     private static JuWaWi juwawi = null;
-    private static boolean dev = false;
 
     public static JuWaWiOptions options;
 
     public static void main(String[] args) throws IOException {
-        dev = true;
         JultiAppLaunch.launchWithDevPlugin(args, PluginManager.JultiPluginData.fromString(
                 Resources.toString(Resources.getResource(JuWaWiPlugin.class, "/julti.plugin.json"), Charset.defaultCharset())
         ), new JuWaWiPlugin());
