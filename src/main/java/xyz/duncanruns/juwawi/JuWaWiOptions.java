@@ -20,6 +20,7 @@ public class JuWaWiOptions {
 
     public boolean enabled = false;
     public List<Byte> updatePercents = Arrays.asList((byte) 5, (byte) 15);
+    public boolean useMainMonitor = true;
     public int x = 0;
     public int y = 0;
     public int w = 1920;

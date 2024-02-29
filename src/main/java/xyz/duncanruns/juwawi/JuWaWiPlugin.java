@@ -5,6 +5,7 @@ import xyz.duncanruns.julti.JultiAppLaunch;
 import xyz.duncanruns.julti.plugin.PluginEvents;
 import xyz.duncanruns.julti.plugin.PluginInitializer;
 import xyz.duncanruns.julti.plugin.PluginManager;
+import xyz.duncanruns.julti.util.MonitorUtil;
 import xyz.duncanruns.juwawi.window.JuWaWi;
 
 import java.io.IOException;
@@ -36,7 +37,12 @@ public class JuWaWiPlugin implements PluginInitializer {
     }
 
     private static JuWaWi createWallWindow() {
-        juwawi = new JuWaWi(options.x, options.y, options.w, options.h);
+        if (options.useMainMonitor) {
+            MonitorUtil.Monitor m = MonitorUtil.getPrimaryMonitor();
+            juwawi = new JuWaWi(m.x, m.y, m.width, m.height);
+        } else {
+            juwawi = new JuWaWi(options.x, options.y, options.w, options.h);
+        }
         return juwawi;
     }
 
