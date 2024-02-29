@@ -42,7 +42,7 @@ public class JuWaWi extends NoRepaintJFrame {
     private final int width, height;
 
     // State
-    private final Queue<MinecraftInstance> toUpdate = new LinkedList<>();
+    private final Queue<MinecraftInstance> toUpdate = new ConcurrentLinkedQueue<>();
     private boolean shouldRefresh = false;
 
     // Tracking
