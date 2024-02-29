@@ -10,6 +10,7 @@ import xyz.duncanruns.julti.management.InstanceManager;
 import xyz.duncanruns.julti.resetting.ResetHelper;
 import xyz.duncanruns.julti.resetting.ResetManager;
 import xyz.duncanruns.julti.win32.Msimg32;
+import xyz.duncanruns.juwawi.JuWaWiPlugin;
 import xyz.duncanruns.juwawi.NoRepaintJFrame;
 import xyz.duncanruns.juwawi.win32.GDI32Extra;
 import xyz.duncanruns.juwawi.win32.User32Extra;
@@ -39,10 +40,7 @@ public class JuWaWi extends NoRepaintJFrame {
     private final Executor drawExecutor = Executors.newSingleThreadExecutor();
 
     // Configuration
-    private final List<Byte> percentUpdates = Arrays.asList((byte) 5, (byte) 15);
     private final int width, height;
-    private final boolean showLocked = true;
-    private final int lockedBorderThickness = 10;
 
     // State
     private final Queue<MinecraftInstance> toUpdate = new ConcurrentLinkedQueue<>();
@@ -252,8 +250,8 @@ public class JuWaWi extends NoRepaintJFrame {
             User32Extra.INSTANCE.GetClientRect(request.instance.getHwnd(), sourceRect);
             Rectangle destRectangle = request.rect;
             Msimg32.INSTANCE.TransparentBlt(drawHDC, destRectangle.x, destRectangle.y, destRectangle.width, destRectangle.height, instanceHDC, 0, 0, sourceRect.right - sourceRect.left, sourceRect.bottom - sourceRect.top, new UINT(GDI32Extra.SRCCOPY));
-            if (request.locked && this.showLocked && this.lockedBorderThickness > 0) {
-                final int x = destRectangle.x, w = destRectangle.width, b = this.lockedBorderThickness, y = destRectangle.y, h = destRectangle.height;
+            if (request.locked && JuWaWiPlugin.options.showLocks && JuWaWiPlugin.options.lockedBorderThickness > 0) {
+                final int x = destRectangle.x, w = destRectangle.width, b = JuWaWiPlugin.options.lockedBorderThickness, y = destRectangle.y, h = destRectangle.height;
                 User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x, y, b, h)), JuWaWi.BLACK_BRUSH);
                 User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x + b, y, w - (2 * b), b)), JuWaWi.BLACK_BRUSH);
                 User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x + w - b, y, b, h)), JuWaWi.BLACK_BRUSH);
@@ -283,9 +281,8 @@ public class JuWaWi extends NoRepaintJFrame {
         }
         byte lastPercent = this.lastInstancePercentages.getOrDefault(instance, (byte) 0);
         byte newPercent = instance.getStateTracker().getLoadingPercent();
-        this.percentUpdates.forEach(updatePoint -> {
+        JuWaWiPlugin.options.updatePercents.forEach(updatePoint -> {
             if (lastPercent < updatePoint && newPercent >= updatePoint) {
-//                System.out.println(lastPercent + "->" + newPercent);
                 this.toUpdate.add(instance);
             }
         });
@@ -307,7 +304,7 @@ public class JuWaWi extends NoRepaintJFrame {
     }
 
     public void onInstanceLock(MinecraftInstance instance) {
-        if (this.showLocked) {
+        if (JuWaWiPlugin.options.showLocks) {
             this.toUpdate.add(instance);
         }
     }

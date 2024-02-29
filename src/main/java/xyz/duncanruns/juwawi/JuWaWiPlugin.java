@@ -14,6 +14,8 @@ public class JuWaWiPlugin implements PluginInitializer {
     private static JuWaWi juwawi = null;
     private static boolean dev = false;
 
+    public static JuWaWiOptions options;
+
     public static void main(String[] args) throws IOException {
         JuWaWiPlugin.dev = true;
         JultiAppLaunch.launchWithDevPlugin(args, PluginManager.JultiPluginData.fromString(
@@ -44,6 +46,7 @@ public class JuWaWiPlugin implements PluginInitializer {
 
     @Override
     public void initialize() {
+        JuWaWiPlugin.options = JuWaWiOptions.load();
         PluginEvents.RunnableEventType.END_TICK.register(() -> {
             if (JuWaWiPlugin.wallWindowExists()) {
                 JuWaWiPlugin.juwawi.tick();
