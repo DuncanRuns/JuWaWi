@@ -47,7 +47,13 @@ public class JuWaWiPlugin implements PluginInitializer {
     @Override
     public void initialize() {
         JuWaWiPlugin.options = JuWaWiOptions.load();
+        JuWaWiPlugin.options.save();
         PluginEvents.RunnableEventType.END_TICK.register(() -> {
+            if (JuWaWiPlugin.options.enabled && !JuWaWiPlugin.wallWindowExists()) {
+                JuWaWiPlugin.openWallWindow();
+            } else if (!JuWaWiPlugin.options.enabled && JuWaWiPlugin.wallWindowExists()) {
+                JuWaWiPlugin.juwawi.dispose();
+            }
             if (JuWaWiPlugin.wallWindowExists()) {
                 JuWaWiPlugin.juwawi.tick();
             }
@@ -77,7 +83,6 @@ public class JuWaWiPlugin implements PluginInitializer {
                 JuWaWiPlugin.juwawi.onInstanceLock(instance);
             }
         });
-        if (JuWaWiPlugin.dev) JuWaWiPlugin.openWallWindow();
     }
 
     @Override
