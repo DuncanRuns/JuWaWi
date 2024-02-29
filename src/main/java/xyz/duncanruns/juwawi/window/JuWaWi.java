@@ -69,9 +69,9 @@ public class JuWaWi extends NoRepaintJFrame {
         this.clearScreenRequestList = Collections.singletonList(new Rectangle(0, 0, this.width, this.height));
     }
 
-    public static List<Rectangle> getCurrentInstancePositions() {
+    public static List<Rectangle> getCurrentInstancePositions(Dimension size) {
         final ResetManager manager = ResetHelper.getManager();
-        return InstanceManager.getInstanceManager().getInstances().stream().map(manager::getInstancePosition).collect(Collectors.toList());
+        return InstanceManager.getInstanceManager().getInstances().stream().map(instance -> manager.getInstancePosition(instance, size)).collect(Collectors.toList());
     }
 
     private static RECT convertRectangle(Rectangle rectangle) {
@@ -84,7 +84,7 @@ public class JuWaWi extends NoRepaintJFrame {
     }
 
     public void tick() {
-        List<Rectangle> currentInstancePositions = getCurrentInstancePositions();
+        List<Rectangle> currentInstancePositions = getCurrentInstancePositions(new Dimension(this.width, this.height));
 
         if (this.shouldRefresh || this.lastPositions == null || currentInstancePositions.size() != this.lastPositions.size()) {
             this.drawExecutor.execute(() -> this.drawAllInstances(currentInstancePositions));
@@ -124,7 +124,7 @@ public class JuWaWi extends NoRepaintJFrame {
         this.toHide.clear();
 
         // Remove draws outside the screen
-        Rectangle screenRect = new Rectangle(this.width, this.height);
+        Rectangle screenRect = new Rectangle(0, 0, this.width, this.height);
         toDraw.removeIf(req -> !req.rect.intersects(screenRect));
         toBlack.removeIf(rect -> !rect.intersects(screenRect));
 
@@ -172,7 +172,7 @@ public class JuWaWi extends NoRepaintJFrame {
         });
     }
 
-    private void onClose() {
+    public void onClose() {
         this.closed = true;
         ActiveWindowManager.clearWallOverride();
         GDI32Extra.INSTANCE.DeleteDC(this.bufferHDC);

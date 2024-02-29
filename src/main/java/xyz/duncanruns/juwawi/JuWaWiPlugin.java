@@ -27,7 +27,8 @@ public class JuWaWiPlugin implements PluginInitializer {
     }
 
     public static synchronized JuWaWi openWallWindow() {
-        if (juwawi != null && !juwawi.isClosed()) {
+        options = JuWaWiOptions.load();
+        if (wallWindowExists()) {
             juwawi.requestFocus();
             return juwawi;
         }
@@ -57,6 +58,7 @@ public class JuWaWiPlugin implements PluginInitializer {
                 openWallWindow();
             } else if (!options.enabled && wallWindowExists()) {
                 juwawi.dispose();
+                juwawi.onClose();
             }
             if (wallWindowExists()) {
                 juwawi.tick();
