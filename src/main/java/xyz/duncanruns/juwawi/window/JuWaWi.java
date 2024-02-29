@@ -34,7 +34,7 @@ import static xyz.duncanruns.julti.util.SleepUtil.sleep;
 public class JuWaWi extends NoRepaintJFrame {
     private static final HBRUSH BLACK_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(4));
     private static final HBRUSH WHITE_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(0));
-    private static final UINT WHITE = new UINT(0xFFFFFF);
+
     private final List<Rectangle> clearScreenRequestList;
     private final Executor drawExecutor = Executors.newSingleThreadExecutor();
 
@@ -46,6 +46,7 @@ public class JuWaWi extends NoRepaintJFrame {
 
     // State
     private final Queue<MinecraftInstance> toUpdate = new ConcurrentLinkedQueue<>();
+    private final Queue<MinecraftInstance> toHide = new ConcurrentLinkedQueue<>();
     private boolean shouldRefresh = false;
 
     // Tracking
@@ -117,9 +118,11 @@ public class JuWaWi extends NoRepaintJFrame {
         // Remove black draws that will be covered by an instance
         toDraw.forEach(req -> toBlack.remove(req.rect));
 
-        // Add draw requests from toUpdate
+        // Add draw requests from toUpdate and toHide
         this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)), locked.contains(instance))));
+        this.toHide.forEach(instance -> toBlack.add(currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance))));
         this.toUpdate.clear();
+        this.toHide.clear();
 
         // Remove draws outside the screen
         Rectangle screenRect = new Rectangle(this.width, this.height);
@@ -290,12 +293,12 @@ public class JuWaWi extends NoRepaintJFrame {
     }
 
     public void onInstanceReset(MinecraftInstance instance) {
-        this.toUpdate.add(instance);
+        this.toHide.add(instance);
     }
 
     public void onInstanceStateChange(MinecraftInstance instance) {
         switch (instance.getStateTracker().getInstanceState()) {
-            case WAITING:
+//            case GENERATING:
             case PREVIEWING:
             case INWORLD:
                 this.toUpdate.add(instance);
