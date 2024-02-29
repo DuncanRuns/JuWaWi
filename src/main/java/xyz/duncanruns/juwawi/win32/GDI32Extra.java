@@ -44,6 +44,8 @@ public interface GDI32Extra extends GDI32 {
 
     HFONT CreateFontA(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight, int bItalic, int bUnderline, int bStrikeOut, int iCharSet, int iOutPrecision, int iClipPrecision, int iQuality, int iPitchAndFamily, WString pszFaceName);
 
+    int SetDCBrushColor(HDC hdc, int color);
+
     @Structure.FieldOrder({"caSize", "caFlags", "caIlluminantIndex", "caRedGamma", "caGreenGamma", "caBlueGamma", "caReferenceBlack", "caReferenceWhite", "caContrast", "caBrightness", "caColorfulness", "caRedGreenTint"})
     class COLORADJUSTMENT extends Structure {
         public WinDef.WORD caSize;
