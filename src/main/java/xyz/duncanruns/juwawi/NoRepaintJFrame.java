@@ -1,8 +1,6 @@
 package xyz.duncanruns.juwawi;
 
 import com.sun.jna.platform.win32.Shell32;
-import com.sun.jna.platform.win32.Shell32Util;
-import com.sun.jna.platform.win32.ShellAPI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,7 +21,7 @@ public class NoRepaintJFrame extends JFrame {
     @Override
     public void repaint(long time, int x, int y, int width, int height) {
         Path path = Paths.get("");
-        Shell32.INSTANCE.ShellExecute(null,"open",path.toString(),null,path.getParent().toString(),1);
+        Shell32.INSTANCE.ShellExecute(null, "open", path.toString(), null, path.getParent().toString(), 1);
     }
 
     @Override

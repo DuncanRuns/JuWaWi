@@ -315,7 +315,7 @@ public class JuWaWi extends NoRepaintJFrame {
     public static class InstanceDrawRequest {
         private final MinecraftInstance instance;
         private final Rectangle rect;
-        private boolean locked = false;
+        private final boolean locked;
 
         /**
          * @param instance  the minecraft instance to draw
