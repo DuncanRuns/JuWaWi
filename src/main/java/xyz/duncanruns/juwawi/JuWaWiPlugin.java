@@ -17,70 +17,70 @@ public class JuWaWiPlugin implements PluginInitializer {
     public static JuWaWiOptions options;
 
     public static void main(String[] args) throws IOException {
-        JuWaWiPlugin.dev = true;
+        dev = true;
         JultiAppLaunch.launchWithDevPlugin(args, PluginManager.JultiPluginData.fromString(
                 Resources.toString(Resources.getResource(JuWaWiPlugin.class, "/julti.plugin.json"), Charset.defaultCharset())
         ), new JuWaWiPlugin());
     }
 
     public static JuWaWi getWallWindow() {
-        return JuWaWiPlugin.juwawi;
+        return juwawi;
     }
 
     public static synchronized JuWaWi openWallWindow() {
-        if (JuWaWiPlugin.juwawi != null && !JuWaWiPlugin.juwawi.isClosed()) {
-            JuWaWiPlugin.juwawi.requestFocus();
-            return JuWaWiPlugin.juwawi;
+        if (juwawi != null && !juwawi.isClosed()) {
+            juwawi.requestFocus();
+            return juwawi;
         }
-        return JuWaWiPlugin.createWallWindow();
+        return createWallWindow();
     }
 
     private static JuWaWi createWallWindow() {
-        JuWaWiPlugin.juwawi = new JuWaWi(JuWaWiPlugin.options.x, JuWaWiPlugin.options.y, JuWaWiPlugin.options.w, JuWaWiPlugin.options.h);
-        return JuWaWiPlugin.juwawi;
+        juwawi = new JuWaWi(options.x, options.y, options.w, options.h);
+        return juwawi;
     }
 
     private static boolean wallWindowExists() {
-        return JuWaWiPlugin.juwawi != null && !JuWaWiPlugin.getWallWindow().isClosed();
+        return juwawi != null && !getWallWindow().isClosed();
     }
 
     @Override
     public void initialize() {
-        JuWaWiPlugin.options = JuWaWiOptions.load();
-        JuWaWiPlugin.options.save();
+        options = JuWaWiOptions.load();
+        options.save();
         PluginEvents.RunnableEventType.END_TICK.register(() -> {
-            if (JuWaWiPlugin.options.enabled && !JuWaWiPlugin.wallWindowExists()) {
-                JuWaWiPlugin.openWallWindow();
-            } else if (!JuWaWiPlugin.options.enabled && JuWaWiPlugin.wallWindowExists()) {
-                JuWaWiPlugin.juwawi.dispose();
+            if (options.enabled && !wallWindowExists()) {
+                openWallWindow();
+            } else if (!options.enabled && wallWindowExists()) {
+                juwawi.dispose();
             }
-            if (JuWaWiPlugin.wallWindowExists()) {
-                JuWaWiPlugin.juwawi.tick();
+            if (wallWindowExists()) {
+                juwawi.tick();
             }
         });
         PluginEvents.RunnableEventType.ALL_INSTANCES_FOUND.register(() -> {
-            if (JuWaWiPlugin.wallWindowExists()) {
-                JuWaWiPlugin.juwawi.onAllInstancesFound();
+            if (wallWindowExists()) {
+                juwawi.onAllInstancesFound();
             }
         });
         PluginEvents.InstanceEventType.PERCENTAGE_CHANGE.register(instance -> {
-            if (JuWaWiPlugin.wallWindowExists()) {
-                JuWaWiPlugin.juwawi.onInstancePercentageChange(instance);
+            if (wallWindowExists()) {
+                juwawi.onInstancePercentageChange(instance);
             }
         });
         PluginEvents.InstanceEventType.RESET.register(instance -> {
-            if (JuWaWiPlugin.wallWindowExists()) {
-                JuWaWiPlugin.juwawi.onInstanceReset(instance);
+            if (wallWindowExists()) {
+                juwawi.onInstanceReset(instance);
             }
         });
         PluginEvents.InstanceEventType.STATE_CHANGE.register(instance -> {
-            if (JuWaWiPlugin.wallWindowExists()) {
-                JuWaWiPlugin.juwawi.onInstanceStateChange(instance);
+            if (wallWindowExists()) {
+                juwawi.onInstanceStateChange(instance);
             }
         });
         PluginEvents.InstanceEventType.LOCK.register(instance -> {
-            if (JuWaWiPlugin.wallWindowExists()) {
-                JuWaWiPlugin.juwawi.onInstanceLock(instance);
+            if (wallWindowExists()) {
+                juwawi.onInstanceLock(instance);
             }
         });
     }
@@ -92,6 +92,6 @@ public class JuWaWiPlugin implements PluginInitializer {
 
     @Override
     public void onMenuButtonPress() {
-        JuWaWiPlugin.openWallWindow();
+        openWallWindow();
     }
 }

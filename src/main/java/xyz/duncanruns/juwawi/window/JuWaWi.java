@@ -83,7 +83,7 @@ public class JuWaWi extends NoRepaintJFrame {
     }
 
     public void tick() {
-        List<Rectangle> currentInstancePositions = JuWaWi.getCurrentInstancePositions();
+        List<Rectangle> currentInstancePositions = getCurrentInstancePositions();
 
         if (this.shouldRefresh || this.lastPositions == null || currentInstancePositions.size() != this.lastPositions.size()) {
             this.drawExecutor.execute(() -> this.drawAllInstances(currentInstancePositions));
@@ -198,7 +198,7 @@ public class JuWaWi extends NoRepaintJFrame {
         }
         RECT rect = new RECT();
         User32Extra.INSTANCE.GetClientRect(this.hwnd, rect);
-        User32Extra.INSTANCE.FillRect(hdc, rect, JuWaWi.BLACK_BRUSH);
+        User32Extra.INSTANCE.FillRect(hdc, rect, BLACK_BRUSH);
         User32Extra.INSTANCE.ReleaseDC(this.hwnd, hdc);
     }
 
@@ -241,7 +241,7 @@ public class JuWaWi extends NoRepaintJFrame {
         }
 
         // Fill black rectangles
-        blackRectangles.stream().map(JuWaWi::convertRectangle).forEach(rect -> User32Extra.INSTANCE.FillRect(drawHDC, rect, JuWaWi.BLACK_BRUSH));
+        blackRectangles.stream().map(JuWaWi::convertRectangle).forEach(rect -> User32Extra.INSTANCE.FillRect(drawHDC, rect, BLACK_BRUSH));
 
         // Draw instances
         for (InstanceDrawRequest request : requests) {
@@ -252,10 +252,10 @@ public class JuWaWi extends NoRepaintJFrame {
             Msimg32.INSTANCE.TransparentBlt(drawHDC, destRectangle.x, destRectangle.y, destRectangle.width, destRectangle.height, instanceHDC, 0, 0, sourceRect.right - sourceRect.left, sourceRect.bottom - sourceRect.top, new UINT(GDI32Extra.SRCCOPY));
             if (request.locked && JuWaWiPlugin.options.showLocks && JuWaWiPlugin.options.lockedBorderThickness > 0) {
                 final int x = destRectangle.x, w = destRectangle.width, b = JuWaWiPlugin.options.lockedBorderThickness, y = destRectangle.y, h = destRectangle.height;
-                User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x, y, b, h)), JuWaWi.BLACK_BRUSH);
-                User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x + b, y, w - (2 * b), b)), JuWaWi.BLACK_BRUSH);
-                User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x + w - b, y, b, h)), JuWaWi.BLACK_BRUSH);
-                User32Extra.INSTANCE.FillRect(drawHDC, JuWaWi.convertRectangle(new Rectangle(x + b, y + h - b, w - (2 * b), b)), JuWaWi.BLACK_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x, y, b, h)), BLACK_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + b, y, w - (2 * b), b)), BLACK_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + w - b, y, b, h)), BLACK_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + b, y + h - b, w - (2 * b), b)), BLACK_BRUSH);
 
             }
             User32Extra.INSTANCE.ReleaseDC(request.instance.getHwnd(), instanceHDC);

@@ -28,9 +28,9 @@ public class JuWaWiOptions {
     public int lockedBorderThickness = 10;
 
     public static JuWaWiOptions load() {
-        if (Files.exists(JuWaWiOptions.OPTIONS_PATH)) {
+        if (Files.exists(OPTIONS_PATH)) {
             try {
-                return new Gson().fromJson(FileUtil.readString(JuWaWiOptions.OPTIONS_PATH), JuWaWiOptions.class);
+                return new Gson().fromJson(FileUtil.readString(OPTIONS_PATH), JuWaWiOptions.class);
             } catch (Exception e) {
                 Julti.log(Level.ERROR, "Failed to load JuWaWi options:\n" + ExceptionUtil.toDetailedString(e));
             }
@@ -40,7 +40,7 @@ public class JuWaWiOptions {
 
     public void save() {
         try {
-            FileUtil.writeString(JuWaWiOptions.OPTIONS_PATH, JuWaWiOptions.GSON_WRITER.toJson(this));
+            FileUtil.writeString(OPTIONS_PATH, GSON_WRITER.toJson(this));
         } catch (IOException e) {
             Julti.log(Level.ERROR, "Failed to save JuWaWi options:\n" + ExceptionUtil.toDetailedString(e));
         }
