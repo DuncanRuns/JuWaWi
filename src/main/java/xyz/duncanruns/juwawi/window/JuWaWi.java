@@ -6,6 +6,7 @@ import sun.awt.windows.WComponentPeer;
 import xyz.duncanruns.julti.gui.JultiGUI;
 import xyz.duncanruns.julti.instance.InstanceState;
 import xyz.duncanruns.julti.instance.MinecraftInstance;
+import xyz.duncanruns.julti.management.ActiveWindowManager;
 import xyz.duncanruns.julti.management.InstanceManager;
 import xyz.duncanruns.julti.resetting.ResetHelper;
 import xyz.duncanruns.julti.resetting.ResetManager;
@@ -173,6 +174,7 @@ public class JuWaWi extends NoRepaintJFrame {
 
     private void onClose() {
         this.closed = true;
+        ActiveWindowManager.clearWallOverride();
         GDI32Extra.INSTANCE.DeleteDC(this.bufferHDC);
     }
 
