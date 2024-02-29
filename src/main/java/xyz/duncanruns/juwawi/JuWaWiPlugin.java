@@ -36,7 +36,7 @@ public class JuWaWiPlugin implements PluginInitializer {
     }
 
     private static JuWaWi createWallWindow() {
-        JuWaWiPlugin.juwawi = new JuWaWi(0, 0, 1920, 1080);
+        JuWaWiPlugin.juwawi = new JuWaWi(JuWaWiPlugin.options.x, JuWaWiPlugin.options.y, JuWaWiPlugin.options.w, JuWaWiPlugin.options.h);
         return JuWaWiPlugin.juwawi;
     }
 
