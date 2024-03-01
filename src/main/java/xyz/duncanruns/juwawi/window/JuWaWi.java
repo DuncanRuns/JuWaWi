@@ -38,6 +38,7 @@ public class JuWaWi extends NoRepaintJFrame {
     private static final HBRUSH BLACK_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(4));
     private static final HBRUSH DC_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(18));
     private static final HBRUSH WHITE_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(0));
+    private static final List<InstanceState> DIRT_STATES = Arrays.asList(InstanceState.GENERATING, InstanceState.WAITING);
 
     private final List<Rectangle> clearScreenRequestList;
     private final Executor drawExecutor = Executors.newSingleThreadExecutor();
@@ -113,7 +114,11 @@ public class JuWaWi extends NoRepaintJFrame {
                 continue;
             }
             // Add draw requests
-            toDraw.add(new InstanceDrawRequest(instance, current, locked.contains(instance)));
+            if (DIRT_STATES.contains(instance.getStateTracker().getInstanceState())) {
+                toDirt.add(current);
+            } else {
+                toDraw.add(new InstanceDrawRequest(instance, current, locked.contains(instance)));
+            }
             toBlack.add(last);
             // Prevent duplicate draw request
             this.toUpdate.remove(instance);
