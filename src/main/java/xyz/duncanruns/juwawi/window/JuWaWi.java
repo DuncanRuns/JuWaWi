@@ -115,7 +115,7 @@ public class JuWaWi extends NoRepaintJFrame {
                 continue;
             }
             // Add draw requests
-            if (DIRT_STATES.contains(instance.getStateTracker().getInstanceState())) {
+            if (instance.shouldCoverWithDirt()) {
                 toDirt.add(current);
             } else {
                 toDraw.add(new InstanceDrawRequest(instance, current, locked.contains(instance)));
@@ -333,15 +333,29 @@ public class JuWaWi extends NoRepaintJFrame {
 
     public void onInstanceReset(MinecraftInstance instance) {
         this.unscheduleUpdates(instance);
-        this.toCover.add(instance);
+        if (JultiOptions.getJultiOptions().doDirtCovers) {
+            this.toCover.add(instance);
+        } else {
+            this.scheduleUpdate(instance, 100);
+        }
     }
 
     public void onInstanceStateChange(MinecraftInstance instance) {
         switch (instance.getStateTracker().getInstanceState()) {
             case WAITING:
+                this.unscheduleUpdates(instance);
+                if (JultiOptions.getJultiOptions().doDirtCovers) {
+                    this.toCover.add(instance);
+                } else {
+                    this.scheduleUpdate(instance, 100);
+                }
             case GENERATING:
                 this.unscheduleUpdates(instance);
-                this.toCover.add(instance);
+                if (JultiOptions.getJultiOptions().doDirtCovers) {
+                    this.toCover.add(instance);
+                } else {
+                    this.toUpdate.add(instance);
+                }
                 break;
             case PREVIEWING:
                 this.unscheduleUpdates(instance);
