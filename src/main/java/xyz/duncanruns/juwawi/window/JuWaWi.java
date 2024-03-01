@@ -313,7 +313,7 @@ public class JuWaWi extends NoRepaintJFrame {
     }
 
     public void onInstanceReset(MinecraftInstance instance) {
-        this.scheduleUpdates.removeIf(pair -> pair.getLeft().equals(instance));
+        this.unscheduleUpdates(instance);
         this.toHide.add(instance);
     }
 
@@ -321,20 +321,28 @@ public class JuWaWi extends NoRepaintJFrame {
         switch (instance.getStateTracker().getInstanceState()) {
             case WAITING:
             case GENERATING:
-                this.scheduleUpdates.removeIf(pair -> pair.getLeft().equals(instance));
+                this.unscheduleUpdates(instance);
                 this.toHide.add(instance);
                 break;
             case PREVIEWING:
-                this.scheduleUpdates.removeIf(pair -> pair.getLeft().equals(instance));
-                this.scheduleUpdates.add(Pair.of(instance, System.currentTimeMillis() + 100));
+                this.unscheduleUpdates(instance);
+                this.scheduleUpdate(instance, 100);
                 break;
             case INWORLD:
-                this.scheduleUpdates.removeIf(pair -> pair.getLeft().equals(instance));
-                this.scheduleUpdates.add(Pair.of(instance, System.currentTimeMillis() + 100));
-                this.scheduleUpdates.add(Pair.of(instance, System.currentTimeMillis() + 1000));
-                this.scheduleUpdates.add(Pair.of(instance, System.currentTimeMillis() + 2000));
+                this.unscheduleUpdates(instance);
+                this.scheduleUpdate(instance, 100);
+                this.scheduleUpdate(instance, 1000);
+                this.scheduleUpdate(instance, 2000);
                 break;
         }
+    }
+
+    private void scheduleUpdate(MinecraftInstance instance, int millis) {
+        this.scheduleUpdates.add(Pair.of(instance, System.currentTimeMillis() + millis));
+    }
+
+    private void unscheduleUpdates(MinecraftInstance instance) {
+        this.scheduleUpdates.removeIf(pair -> pair.getLeft().equals(instance));
     }
 
     public void onInstanceLock(MinecraftInstance instance) {
