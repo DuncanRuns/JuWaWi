@@ -6,6 +6,7 @@ import xyz.duncanruns.julti.plugin.PluginEvents;
 import xyz.duncanruns.julti.plugin.PluginInitializer;
 import xyz.duncanruns.julti.plugin.PluginManager;
 import xyz.duncanruns.julti.util.MonitorUtil;
+import xyz.duncanruns.juwawi.gui.JuWaWiConfigGUI;
 import xyz.duncanruns.juwawi.window.JuWaWi;
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.nio.charset.Charset;
 
 public class JuWaWiPlugin implements PluginInitializer {
     private static JuWaWi juwawi = null;
+    private static JuWaWiConfigGUI configGUI = null;
 
     public static JuWaWiOptions options;
 
@@ -35,6 +37,15 @@ public class JuWaWiPlugin implements PluginInitializer {
         return createWallWindow();
     }
 
+    public static JuWaWiConfigGUI openConfigGUI() {
+        if (configGUI == null || configGUI.isClosed()) {
+            configGUI = new JuWaWiConfigGUI();
+            return configGUI;
+        }
+        configGUI.requestFocus();
+        return configGUI;
+    }
+
     private static JuWaWi createWallWindow() {
         if (options.useMainMonitor) {
             MonitorUtil.Monitor m = MonitorUtil.getPrimaryMonitor();
@@ -47,6 +58,13 @@ public class JuWaWiPlugin implements PluginInitializer {
 
     private static boolean wallWindowExists() {
         return juwawi != null && !getWallWindow().isClosed();
+    }
+
+    public static void refreshWallWindow() {
+        if (wallWindowExists()) {
+            juwawi.dispose();
+            juwawi.onClose();
+        }
     }
 
     @Override
@@ -93,11 +111,11 @@ public class JuWaWiPlugin implements PluginInitializer {
 
     @Override
     public String getMenuButtonName() {
-        return "Open Wall Window";
+        return "Open Config";
     }
 
     @Override
     public void onMenuButtonPress() {
-        openWallWindow();
+        openConfigGUI();
     }
 }
