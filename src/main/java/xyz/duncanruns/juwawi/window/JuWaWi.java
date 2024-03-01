@@ -2,6 +2,7 @@ package xyz.duncanruns.juwawi.window;
 
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.WinDef.*;
+import org.apache.commons.lang3.tuple.Pair;
 import sun.awt.windows.WComponentPeer;
 import xyz.duncanruns.julti.gui.JultiGUI;
 import xyz.duncanruns.julti.instance.InstanceState;
@@ -50,6 +51,7 @@ public class JuWaWi extends NoRepaintJFrame {
 
     // Tracking
     private final Map<MinecraftInstance, Byte> lastInstancePercentages = new HashMap<>();
+    private final Queue<Pair<MinecraftInstance, Long>> scheduleUpdates = new ConcurrentLinkedQueue<>();
     private List<Rectangle> lastPositions = null;
 
 //    private final HDC lockIcon = null;
@@ -87,11 +89,11 @@ public class JuWaWi extends NoRepaintJFrame {
         List<Rectangle> currentInstancePositions = getCurrentInstancePositions(new Dimension(this.width, this.height));
 
         if (this.shouldRefresh || this.lastPositions == null || currentInstancePositions.size() != this.lastPositions.size()) {
-            this.drawExecutor.execute(() -> this.drawAllInstances(currentInstancePositions));
-            this.shouldRefresh = false;
-            this.lastPositions = currentInstancePositions;
+            this.refresh(currentInstancePositions);
             return;
         }
+
+        this.checkSchedule();
 
         List<InstanceDrawRequest> toDraw = new ArrayList<>();
         List<Rectangle> toBlack = new ArrayList<>();
@@ -132,6 +134,26 @@ public class JuWaWi extends NoRepaintJFrame {
             this.drawExecutor.execute(() -> this.draw(toDraw, toBlack));
         }
         this.lastPositions = currentInstancePositions;
+    }
+
+    private void refresh(List<Rectangle> currentInstancePositions) {
+        this.drawExecutor.execute(() -> this.drawAllInstances(currentInstancePositions));
+        this.shouldRefresh = false;
+        this.lastPositions = currentInstancePositions;
+        this.lastInstancePercentages.clear();
+        this.scheduleUpdates.clear();
+    }
+
+    private void checkSchedule() {
+        long currentTimeMillis = System.currentTimeMillis();
+        this.scheduleUpdates.removeIf(pair -> {
+            long time = pair.getRight();
+            if (currentTimeMillis > time) {
+                this.toUpdate.add(pair.getLeft());
+                return true;
+            }
+            return false;
+        });
     }
 
     private void drawAllInstances(List<Rectangle> instancePositions) {
@@ -258,7 +280,6 @@ public class JuWaWi extends NoRepaintJFrame {
                 User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + b, y, w - (2 * b), b)), BLACK_BRUSH);
                 User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + w - b, y, b, h)), BLACK_BRUSH);
                 User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + b, y + h - b, w - (2 * b), b)), BLACK_BRUSH);
-
             }
             User32Extra.INSTANCE.ReleaseDC(request.instance.getHwnd(), instanceHDC);
         }
@@ -292,15 +313,26 @@ public class JuWaWi extends NoRepaintJFrame {
     }
 
     public void onInstanceReset(MinecraftInstance instance) {
+        this.scheduleUpdates.removeIf(pair -> pair.getLeft().equals(instance));
         this.toHide.add(instance);
     }
 
     public void onInstanceStateChange(MinecraftInstance instance) {
         switch (instance.getStateTracker().getInstanceState()) {
-//            case GENERATING:
+            case WAITING:
+            case GENERATING:
+                this.scheduleUpdates.removeIf(pair -> pair.getLeft().equals(instance));
+                this.toHide.add(instance);
+                break;
             case PREVIEWING:
+                this.scheduleUpdates.removeIf(pair -> pair.getLeft().equals(instance));
+                this.scheduleUpdates.add(Pair.of(instance, System.currentTimeMillis() + 100));
+                break;
             case INWORLD:
-                this.toUpdate.add(instance);
+                this.scheduleUpdates.removeIf(pair -> pair.getLeft().equals(instance));
+                this.scheduleUpdates.add(Pair.of(instance, System.currentTimeMillis() + 100));
+                this.scheduleUpdates.add(Pair.of(instance, System.currentTimeMillis() + 1000));
+                this.scheduleUpdates.add(Pair.of(instance, System.currentTimeMillis() + 2000));
                 break;
         }
     }
