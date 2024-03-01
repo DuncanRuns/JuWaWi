@@ -4,6 +4,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.WinDef.*;
 import org.apache.commons.lang3.tuple.Pair;
 import sun.awt.windows.WComponentPeer;
+import xyz.duncanruns.julti.JultiOptions;
 import xyz.duncanruns.julti.gui.JultiGUI;
 import xyz.duncanruns.julti.instance.InstanceState;
 import xyz.duncanruns.julti.instance.MinecraftInstance;
@@ -48,7 +49,7 @@ public class JuWaWi extends NoRepaintJFrame {
 
     // State
     private final Queue<MinecraftInstance> toUpdate = new ConcurrentLinkedQueue<>();
-    private final Queue<MinecraftInstance> toHide = new ConcurrentLinkedQueue<>();
+    private final Queue<MinecraftInstance> toCover = new ConcurrentLinkedQueue<>();
     private boolean shouldRefresh = false;
 
     // Tracking
@@ -126,9 +127,9 @@ public class JuWaWi extends NoRepaintJFrame {
 
         // Add draw requests from toUpdate and toHide
         this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)), locked.contains(instance))));
-        this.toHide.forEach(instance -> toDirt.add(currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance))));
+        this.toCover.forEach(instance -> toDirt.add(currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance))));
         this.toUpdate.clear();
-        this.toHide.clear();
+        this.toCover.clear();
 
         // Remove black draws that will be covered by an instance
         toDraw.forEach(req -> toBlack.remove(req.rect));
@@ -332,7 +333,7 @@ public class JuWaWi extends NoRepaintJFrame {
 
     public void onInstanceReset(MinecraftInstance instance) {
         this.unscheduleUpdates(instance);
-        this.toHide.add(instance);
+        this.toCover.add(instance);
     }
 
     public void onInstanceStateChange(MinecraftInstance instance) {
@@ -340,7 +341,7 @@ public class JuWaWi extends NoRepaintJFrame {
             case WAITING:
             case GENERATING:
                 this.unscheduleUpdates(instance);
-                this.toHide.add(instance);
+                this.toCover.add(instance);
                 break;
             case PREVIEWING:
                 this.unscheduleUpdates(instance);
