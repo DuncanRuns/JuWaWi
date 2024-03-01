@@ -1,4 +1,4 @@
-package xyz.duncanruns.juwawi;
+package xyz.duncanruns.juwawi.window;
 
 import com.sun.jna.platform.win32.Shell32;
 

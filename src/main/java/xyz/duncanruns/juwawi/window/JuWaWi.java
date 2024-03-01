@@ -14,7 +14,6 @@ import xyz.duncanruns.julti.resetting.ResetHelper;
 import xyz.duncanruns.julti.resetting.ResetManager;
 import xyz.duncanruns.julti.win32.Msimg32;
 import xyz.duncanruns.juwawi.JuWaWiPlugin;
-import xyz.duncanruns.juwawi.NoRepaintJFrame;
 import xyz.duncanruns.juwawi.win32.GDI32Extra;
 import xyz.duncanruns.juwawi.win32.User32Extra;
 
