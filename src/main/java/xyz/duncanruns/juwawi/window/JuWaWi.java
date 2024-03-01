@@ -36,6 +36,7 @@ import static xyz.duncanruns.julti.util.SleepUtil.sleep;
 
 public class JuWaWi extends NoRepaintJFrame {
     private static final HBRUSH BLACK_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(4));
+    private static final HBRUSH DC_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(18));
     private static final HBRUSH WHITE_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(0));
 
     private final List<Rectangle> clearScreenRequestList;
@@ -97,6 +98,7 @@ public class JuWaWi extends NoRepaintJFrame {
 
         List<InstanceDrawRequest> toDraw = new ArrayList<>();
         List<Rectangle> toBlack = new ArrayList<>();
+        List<Rectangle> toDirt = new ArrayList<>();
 
         List<MinecraftInstance> instances = InstanceManager.getInstanceManager().getInstances();
         List<MinecraftInstance> locked = ResetHelper.getManager().getLockedInstances();
@@ -116,22 +118,25 @@ public class JuWaWi extends NoRepaintJFrame {
             // Prevent duplicate draw request
             this.toUpdate.remove(instance);
         }
-        // Remove black draws that will be covered by an instance
-        toDraw.forEach(req -> toBlack.remove(req.rect));
 
         // Add draw requests from toUpdate and toHide
         this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)), locked.contains(instance))));
-        this.toHide.forEach(instance -> toBlack.add(currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance))));
+        this.toHide.forEach(instance -> toDirt.add(currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance))));
         this.toUpdate.clear();
         this.toHide.clear();
+
+        // Remove black draws that will be covered by an instance
+        toDraw.forEach(req -> toBlack.remove(req.rect));
+        toDraw.forEach(req -> toDirt.remove(req.rect));
 
         // Remove draws outside the screen
         Rectangle screenRect = new Rectangle(0, 0, this.width, this.height);
         toDraw.removeIf(req -> !req.rect.intersects(screenRect));
         toBlack.removeIf(rect -> !rect.intersects(screenRect));
+        toDirt.removeIf(rect -> !rect.intersects(screenRect));
 
-        if (!(toDraw.isEmpty() && toBlack.isEmpty())) {
-            this.drawExecutor.execute(() -> this.draw(toDraw, toBlack));
+        if (!(toDraw.isEmpty() && toBlack.isEmpty() && toDirt.isEmpty())) {
+            this.drawExecutor.execute(() -> this.draw(toDraw, toBlack, toDirt));
         }
         this.lastPositions = currentInstancePositions;
     }
@@ -164,7 +169,7 @@ public class JuWaWi extends NoRepaintJFrame {
             MinecraftInstance instance = instances.get(i);
             requests.add(new InstanceDrawRequest(instance, instancePositions.get(i), locked.contains(instance)));
         }
-        this.drawExecutor.execute(() -> this.draw(requests, this.clearScreenRequestList));
+        this.drawExecutor.execute(() -> this.draw(requests, this.clearScreenRequestList, Collections.emptyList()));
     }
 
     public void finishSetup() {
@@ -249,11 +254,12 @@ public class JuWaWi extends NoRepaintJFrame {
      *
      * @param requests        instance draw requests
      * @param blackRectangles areas to fill with black
+     * @param dirtRectangles
      */
-    public synchronized void draw(List<InstanceDrawRequest> requests, List<Rectangle> blackRectangles) {
+    public synchronized void draw(List<InstanceDrawRequest> requests, List<Rectangle> blackRectangles, List<Rectangle> dirtRectangles) {
         // Draw directly to wall if only 1 request that isn't a locked instance, or use a buffer
 
-        boolean useBuffer = (requests.size() + blackRectangles.size()) > 1 || requests.size() == 1 && requests.get(0).locked;
+        boolean useBuffer = (requests.size() + blackRectangles.size() + dirtRectangles.size()) > 1 || requests.size() == 1 && requests.get(0).locked;
         HDC wallWindowHDC = User32Extra.INSTANCE.GetDC(this.hwnd);
         HDC drawHDC;
         if (useBuffer) {
@@ -267,6 +273,12 @@ public class JuWaWi extends NoRepaintJFrame {
         // Fill black rectangles
         blackRectangles.stream().map(JuWaWi::convertRectangle).forEach(rect -> User32Extra.INSTANCE.FillRect(drawHDC, rect, BLACK_BRUSH));
 
+        // Fill dirt rectangles
+        if (!dirtRectangles.isEmpty()) {
+            GDI32Extra.INSTANCE.SetDCBrushColor(drawHDC, JuWaWiPlugin.options.dirtColor);
+            dirtRectangles.stream().map(JuWaWi::convertRectangle).forEach(rect -> User32Extra.INSTANCE.FillRect(drawHDC, rect, DC_BRUSH));
+        }
+
         // Draw instances
         for (InstanceDrawRequest request : requests) {
             HDC instanceHDC = User32Extra.INSTANCE.GetDC(request.instance.getHwnd());
@@ -276,10 +288,11 @@ public class JuWaWi extends NoRepaintJFrame {
             Msimg32.INSTANCE.TransparentBlt(drawHDC, destRectangle.x, destRectangle.y, destRectangle.width, destRectangle.height, instanceHDC, 0, 0, sourceRect.right - sourceRect.left, sourceRect.bottom - sourceRect.top, new UINT(GDI32Extra.SRCCOPY));
             if (request.locked && JuWaWiPlugin.options.showLocks && JuWaWiPlugin.options.lockedBorderThickness > 0) {
                 final int x = destRectangle.x, w = destRectangle.width, b = JuWaWiPlugin.options.lockedBorderThickness, y = destRectangle.y, h = destRectangle.height;
-                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x, y, b, h)), BLACK_BRUSH);
-                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + b, y, w - (2 * b), b)), BLACK_BRUSH);
-                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + w - b, y, b, h)), BLACK_BRUSH);
-                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + b, y + h - b, w - (2 * b), b)), BLACK_BRUSH);
+                GDI32Extra.INSTANCE.SetDCBrushColor(drawHDC, JuWaWiPlugin.options.lockColor);
+                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x, y, b, h)), DC_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + b, y, w - (2 * b), b)), DC_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + w - b, y, b, h)), DC_BRUSH);
+                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + b, y + h - b, w - (2 * b), b)), DC_BRUSH);
             }
             User32Extra.INSTANCE.ReleaseDC(request.instance.getHwnd(), instanceHDC);
         }

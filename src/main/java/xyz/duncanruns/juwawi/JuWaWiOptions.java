@@ -27,6 +27,8 @@ public class JuWaWiOptions {
     public int h = 1080;
     public boolean showLocks = true;
     public int lockedBorderThickness = 10;
+    public int lockColor = 0xffffff;
+    public int dirtColor = 0x000000;
 
     public static JuWaWiOptions load() {
         if (Files.exists(OPTIONS_PATH)) {
