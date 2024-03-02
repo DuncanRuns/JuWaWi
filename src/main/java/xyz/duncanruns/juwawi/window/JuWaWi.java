@@ -3,7 +3,9 @@ package xyz.duncanruns.juwawi.window;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.WinDef.*;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.Level;
 import sun.awt.windows.WComponentPeer;
+import xyz.duncanruns.julti.Julti;
 import xyz.duncanruns.julti.JultiOptions;
 import xyz.duncanruns.julti.gui.JultiGUI;
 import xyz.duncanruns.julti.instance.InstanceState;
@@ -12,6 +14,7 @@ import xyz.duncanruns.julti.management.ActiveWindowManager;
 import xyz.duncanruns.julti.management.InstanceManager;
 import xyz.duncanruns.julti.resetting.ResetHelper;
 import xyz.duncanruns.julti.resetting.ResetManager;
+import xyz.duncanruns.julti.util.ExceptionUtil;
 import xyz.duncanruns.julti.win32.Msimg32;
 import xyz.duncanruns.juwawi.JuWaWiPlugin;
 import xyz.duncanruns.juwawi.util.ColorUtil;
@@ -247,6 +250,7 @@ public class JuWaWi extends NoRepaintJFrame {
             this.hwnd = new HWND(new Pointer(hwndLong));
             return true;
         } catch (Exception e) {
+            Julti.log(Level.ERROR, "JuWaWi tryGrabHwnd Error: " + ExceptionUtil.toDetailedString(e));
             return false;
         }
     }
