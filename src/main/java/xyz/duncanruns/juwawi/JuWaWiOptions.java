@@ -27,9 +27,9 @@ public class JuWaWiOptions {
     public int h = 1080;
     public boolean showLocks = true;
     public int lockedBorderThickness = 10;
-    public int lockColor = 0xffffff;
-    public int dirtColor = 0x000000;
-    public int bgColor = 0x000000;
+    public int lockColor = 0xffffff; // White
+    public int dirtColor = 0x000000; // Black
+    public int bgColor = 0x111111; // Dark Gray
 
     public static JuWaWiOptions load() {
         if (Files.exists(OPTIONS_PATH)) {
