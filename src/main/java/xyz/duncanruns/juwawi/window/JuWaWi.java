@@ -203,7 +203,7 @@ public class JuWaWi extends NoRepaintJFrame {
     private void setupWindow() {
         this.setSize(this.width, this.height);
 
-        this.setBackground(Color.BLACK);
+        this.setBackground(ColorUtil.fromWinColor(JuWaWiPlugin.options.bgColor));
         this.setUndecorated(true);
         this.setResizable(false);
         this.setTitle("JuWaWi");
