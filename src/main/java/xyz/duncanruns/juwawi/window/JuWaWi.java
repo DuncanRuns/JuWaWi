@@ -47,6 +47,7 @@ public class JuWaWi extends NoRepaintJFrame {
     // State
     private final Queue<MinecraftInstance> toUpdate = new ConcurrentLinkedQueue<>();
     private boolean shouldRefresh = false;
+    private boolean paused = false;
 
     // Tracking
     private final Map<MinecraftInstance, Byte> lastInstancePercentages = new HashMap<>();
@@ -86,6 +87,17 @@ public class JuWaWi extends NoRepaintJFrame {
 
     public void tick() {
         List<Rectangle> currentInstancePositions = getCurrentInstancePositions(new Dimension(this.width, this.height));
+
+        if (ActiveWindowManager.isWallActive() && this.paused) {
+            this.paused = false;
+            this.shouldRefresh = true;
+        } else if (!ActiveWindowManager.isWallActive() && !this.paused) {
+            this.paused = true;
+        }
+
+        if (this.paused) {
+            return;
+        }
 
         if (this.shouldRefresh || this.lastPositions == null || currentInstancePositions.size() != this.lastPositions.size()) {
             this.refresh(currentInstancePositions);
@@ -369,6 +381,11 @@ public class JuWaWi extends NoRepaintJFrame {
         if (JuWaWiPlugin.options.showLocks) {
             this.toUpdate.add(instance);
         }
+    }
+
+    public void onWallActivate() {
+        this.paused = false;
+        this.shouldRefresh = true;
     }
 
     public static class InstanceDrawRequest {

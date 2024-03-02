@@ -107,6 +107,9 @@ public class JuWaWiPlugin implements PluginInitializer {
                 juwawi.onInstanceLock(instance);
             }
         });
+        PluginEvents.RunnableEventType.WALL_ACTIVATE.register(() -> {
+            juwawi.onWallActivate();
+        });
     }
 
     @Override
