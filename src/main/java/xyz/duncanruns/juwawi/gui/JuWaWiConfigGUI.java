@@ -4,6 +4,7 @@ import xyz.duncanruns.julti.Julti;
 import xyz.duncanruns.julti.gui.JultiGUI;
 import xyz.duncanruns.julti.util.GUIUtil;
 import xyz.duncanruns.juwawi.JuWaWiPlugin;
+import xyz.duncanruns.juwawi.util.ColorUtil;
 
 import javax.swing.*;
 import javax.swing.text.NumberFormatter;
@@ -103,22 +104,6 @@ public class JuWaWiConfigGUI extends JFrame {
         return positionPanel;
     }
 
-    private static int getRed(int winColor) {
-        return winColor & 0xff;
-    }
-
-    private static int getGreen(int winColor) {
-        return (winColor >> 8) & 0xff;
-    }
-
-    private static int getBlue(int winColor) {
-        return (winColor >> 16) & 0xff;
-    }
-
-    private static int toWinColor(Color color) {
-        return color.getRed() + (color.getGreen() << 8) + (color.getBlue() << 16);
-    }
-
     private static JSlider getBorderThicknessSlider(JLabel borderThicknessLabel) {
         JSlider slider = new JSlider(JSlider.HORIZONTAL, 1, 100, JuWaWiPlugin.options.lockedBorderThickness);
         slider.addMouseListener(new MouseAdapter() {
@@ -198,12 +183,12 @@ public class JuWaWiConfigGUI extends JFrame {
 
             panel.add(GUIUtil.leftJustify(GUIUtil.getButtonWithMethod(new JButton("Choose Lock Color"), e -> {
                 int c = JuWaWiPlugin.options.lockColor;
-                Color newColor = JColorChooser.showDialog(panel, "JuWaWi: Choose Lock Color", new Color(getRed(c), getGreen(c), getBlue(c)));
+                Color newColor = JColorChooser.showDialog(panel, "JuWaWi: Choose Lock Color", ColorUtil.fromWinColor(c));
                 if (newColor == null) {
                     return;
                 }
                 Julti.waitForExecute(() -> {
-                    JuWaWiPlugin.options.lockColor = toWinColor(newColor);
+                    JuWaWiPlugin.options.lockColor = ColorUtil.toWinColor(newColor);
                     JuWaWiPlugin.options.save();
                 });
             })));
@@ -220,24 +205,24 @@ public class JuWaWiConfigGUI extends JFrame {
         panel.add(GUIUtil.createSpacer());
         panel.add(GUIUtil.leftJustify(GUIUtil.getButtonWithMethod(new JButton("Choose Dirt Cover Color"), e -> {
             int c = JuWaWiPlugin.options.dirtColor;
-            Color newColor = JColorChooser.showDialog(panel, "JuWaWi: Choose Dirt Cover Color", new Color(getRed(c), getGreen(c), getBlue(c)));
+            Color newColor = JColorChooser.showDialog(panel, "JuWaWi: Choose Dirt Cover Color", ColorUtil.fromWinColor(c));
             if (newColor == null) {
                 return;
             }
             Julti.waitForExecute(() -> {
-                JuWaWiPlugin.options.dirtColor = toWinColor(newColor);
+                JuWaWiPlugin.options.dirtColor = ColorUtil.toWinColor(newColor);
                 JuWaWiPlugin.options.save();
             });
         })));
         panel.add(GUIUtil.createSpacer());
         panel.add(GUIUtil.leftJustify(GUIUtil.getButtonWithMethod(new JButton("Choose Background Color"), e -> {
             int c = JuWaWiPlugin.options.bgColor;
-            Color newColor = JColorChooser.showDialog(panel, "JuWaWi: Choose Background Color", new Color(getRed(c), getGreen(c), getBlue(c)));
+            Color newColor = JColorChooser.showDialog(panel, "JuWaWi: Choose Background Color", ColorUtil.fromWinColor(c));
             if (newColor == null) {
                 return;
             }
             Julti.waitForExecute(() -> {
-                JuWaWiPlugin.options.bgColor = toWinColor(newColor);
+                JuWaWiPlugin.options.bgColor = ColorUtil.toWinColor(newColor);
                 JuWaWiPlugin.options.save();
             });
         })));
