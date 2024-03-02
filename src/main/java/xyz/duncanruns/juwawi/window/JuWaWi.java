@@ -48,7 +48,6 @@ public class JuWaWi extends NoRepaintJFrame {
 
     // State
     private final Queue<MinecraftInstance> toUpdate = new ConcurrentLinkedQueue<>();
-    private final Queue<MinecraftInstance> toCover = new ConcurrentLinkedQueue<>();
     private boolean shouldRefresh = false;
 
     // Tracking
@@ -114,34 +113,26 @@ public class JuWaWi extends NoRepaintJFrame {
                 continue;
             }
             // Add draw requests
-            if (instance.shouldCoverWithDirt()) {
-                toDirt.add(current);
-            } else {
-                toDraw.add(new InstanceDrawRequest(instance, current, locked.contains(instance)));
-            }
+            toDraw.add(new InstanceDrawRequest(instance, current, locked.contains(instance), instance.shouldCoverWithDirt()));
             toBlack.add(last);
             // Prevent duplicate draw request
-            this.toUpdate.remove(instance);
+            this.toUpdate.removeIf(in -> in.equals(instance));
         }
 
-        // Add draw requests from toUpdate and toHide
-        this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)), locked.contains(instance))));
-        this.toCover.forEach(instance -> toDirt.add(currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance))));
+        // Add draw requests from toUpdate
+        this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)), locked.contains(instance), instance.shouldCoverWithDirt())));
         this.toUpdate.clear();
-        this.toCover.clear();
 
         // Remove black draws that will be covered by an instance
         toDraw.forEach(req -> toBlack.remove(req.rect));
-        toDraw.forEach(req -> toDirt.remove(req.rect));
 
         // Remove draws outside the screen
         Rectangle screenRect = new Rectangle(0, 0, this.width, this.height);
         toDraw.removeIf(req -> !req.rect.intersects(screenRect));
         toBlack.removeIf(rect -> !rect.intersects(screenRect));
-        toDirt.removeIf(rect -> !rect.intersects(screenRect));
 
-        if (!(toDraw.isEmpty() && toBlack.isEmpty() && toDirt.isEmpty())) {
-            this.drawExecutor.execute(() -> this.draw(toDraw, toBlack, toDirt));
+        if (!(toDraw.isEmpty() && toBlack.isEmpty())) {
+            this.drawExecutor.execute(() -> this.draw(toDraw, toBlack));
         }
         this.lastPositions = currentInstancePositions;
     }
@@ -172,9 +163,9 @@ public class JuWaWi extends NoRepaintJFrame {
         List<MinecraftInstance> locked = ResetHelper.getManager().getLockedInstances();
         for (int i = 0; i < instancePositions.size(); i++) {
             MinecraftInstance instance = instances.get(i);
-            requests.add(new InstanceDrawRequest(instance, instancePositions.get(i), locked.contains(instance)));
+            requests.add(new InstanceDrawRequest(instance, instancePositions.get(i), locked.contains(instance), instance.shouldCoverWithDirt()));
         }
-        this.drawExecutor.execute(() -> this.draw(requests, this.clearScreenRequestList, Collections.emptyList()));
+        this.drawExecutor.execute(() -> this.draw(requests, this.clearScreenRequestList));
     }
 
     public void finishSetup() {
@@ -259,12 +250,11 @@ public class JuWaWi extends NoRepaintJFrame {
      *
      * @param requests        instance draw requests
      * @param blackRectangles areas to fill with black
-     * @param dirtRectangles
      */
-    public synchronized void draw(List<InstanceDrawRequest> requests, List<Rectangle> blackRectangles, List<Rectangle> dirtRectangles) {
+    public synchronized void draw(List<InstanceDrawRequest> requests, List<Rectangle> blackRectangles) {
         // Draw directly to wall if only 1 request that isn't a locked instance, or use a buffer
 
-        boolean useBuffer = (requests.size() + blackRectangles.size() + dirtRectangles.size()) > 1 || requests.size() == 1 && requests.get(0).locked;
+        boolean useBuffer = (requests.size() + blackRectangles.size()) > 1 || requests.size() == 1 && requests.get(0).locked;
         HDC wallWindowHDC = User32Extra.INSTANCE.GetDC(this.hwnd);
         HDC drawHDC;
         if (useBuffer) {
@@ -278,19 +268,19 @@ public class JuWaWi extends NoRepaintJFrame {
         // Fill black rectangles
         blackRectangles.stream().map(JuWaWi::convertRectangle).forEach(rect -> User32Extra.INSTANCE.FillRect(drawHDC, rect, BLACK_BRUSH));
 
-        // Fill dirt rectangles
-        if (!dirtRectangles.isEmpty()) {
-            GDI32Extra.INSTANCE.SetDCBrushColor(drawHDC, JuWaWiPlugin.options.dirtColor);
-            dirtRectangles.stream().map(JuWaWi::convertRectangle).forEach(rect -> User32Extra.INSTANCE.FillRect(drawHDC, rect, DC_BRUSH));
-        }
-
         // Draw instances
         for (InstanceDrawRequest request : requests) {
-            HDC instanceHDC = User32Extra.INSTANCE.GetDC(request.instance.getHwnd());
-            RECT sourceRect = new RECT();
-            User32Extra.INSTANCE.GetClientRect(request.instance.getHwnd(), sourceRect);
             Rectangle destRectangle = request.rect;
-            Msimg32.INSTANCE.TransparentBlt(drawHDC, destRectangle.x, destRectangle.y, destRectangle.width, destRectangle.height, instanceHDC, 0, 0, sourceRect.right - sourceRect.left, sourceRect.bottom - sourceRect.top, new UINT(GDI32Extra.SRCCOPY));
+            if (request.dirtCover) {
+                GDI32Extra.INSTANCE.SetDCBrushColor(drawHDC, JuWaWiPlugin.options.dirtColor);
+                User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(destRectangle), DC_BRUSH);
+            } else {
+                HDC instanceHDC = User32Extra.INSTANCE.GetDC(request.instance.getHwnd());
+                RECT sourceRect = new RECT();
+                User32Extra.INSTANCE.GetClientRect(request.instance.getHwnd(), sourceRect);
+                Msimg32.INSTANCE.TransparentBlt(drawHDC, destRectangle.x, destRectangle.y, destRectangle.width, destRectangle.height, instanceHDC, 0, 0, sourceRect.right - sourceRect.left, sourceRect.bottom - sourceRect.top, new UINT(GDI32Extra.SRCCOPY));
+                User32Extra.INSTANCE.ReleaseDC(request.instance.getHwnd(), instanceHDC);
+            }
             if (request.locked && JuWaWiPlugin.options.showLocks && JuWaWiPlugin.options.lockedBorderThickness > 0) {
                 final int x = destRectangle.x, w = destRectangle.width, b = JuWaWiPlugin.options.lockedBorderThickness, y = destRectangle.y, h = destRectangle.height;
                 GDI32Extra.INSTANCE.SetDCBrushColor(drawHDC, JuWaWiPlugin.options.lockColor);
@@ -299,7 +289,6 @@ public class JuWaWi extends NoRepaintJFrame {
                 User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + w - b, y, b, h)), DC_BRUSH);
                 User32Extra.INSTANCE.FillRect(drawHDC, convertRectangle(new Rectangle(x + b, y + h - b, w - (2 * b), b)), DC_BRUSH);
             }
-            User32Extra.INSTANCE.ReleaseDC(request.instance.getHwnd(), instanceHDC);
         }
 
         if (useBuffer) {
@@ -333,7 +322,7 @@ public class JuWaWi extends NoRepaintJFrame {
     public void onInstanceReset(MinecraftInstance instance) {
         this.unscheduleUpdates(instance);
         if (JultiOptions.getJultiOptions().doDirtCovers) {
-            this.toCover.add(instance);
+            this.toUpdate.add(instance);
         } else {
             this.scheduleUpdate(instance, 100);
         }
@@ -344,14 +333,14 @@ public class JuWaWi extends NoRepaintJFrame {
             case WAITING:
                 this.unscheduleUpdates(instance);
                 if (JultiOptions.getJultiOptions().doDirtCovers) {
-                    this.toCover.add(instance);
+                    this.toUpdate.add(instance);
                 } else {
                     this.scheduleUpdate(instance, 100);
                 }
             case GENERATING:
                 this.unscheduleUpdates(instance);
                 if (JultiOptions.getJultiOptions().doDirtCovers) {
-                    this.toCover.add(instance);
+                    this.toUpdate.add(instance);
                 } else {
                     this.toUpdate.add(instance);
                 }
@@ -387,15 +376,17 @@ public class JuWaWi extends NoRepaintJFrame {
         private final MinecraftInstance instance;
         private final Rectangle rect;
         private final boolean locked;
+        private final boolean dirtCover;
 
         /**
          * @param instance  the minecraft instance to draw
          * @param rectangle the specified rectangle to draw on the wall window
          */
-        public InstanceDrawRequest(MinecraftInstance instance, Rectangle rectangle, boolean locked) {
+        public InstanceDrawRequest(MinecraftInstance instance, Rectangle rectangle, boolean locked, boolean dirtCover) {
             this.instance = instance;
             this.rect = rectangle;
             this.locked = locked;
+            this.dirtCover = dirtCover;
         }
     }
 }
