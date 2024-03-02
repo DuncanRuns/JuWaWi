@@ -2,5 +2,5 @@
   "name": "JuWaWi",
   "id": "juwawi",
   "version": "${version}",
-  "initializer": "xyz.duncanruns.juwawi.JuWaWi"
+  "initializer": "xyz.duncanruns.juwawi.JuWaWiPlugin"
 }
