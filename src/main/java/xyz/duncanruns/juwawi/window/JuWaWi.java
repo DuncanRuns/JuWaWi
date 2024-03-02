@@ -14,6 +14,7 @@ import xyz.duncanruns.julti.resetting.ResetHelper;
 import xyz.duncanruns.julti.resetting.ResetManager;
 import xyz.duncanruns.julti.win32.Msimg32;
 import xyz.duncanruns.juwawi.JuWaWiPlugin;
+import xyz.duncanruns.juwawi.util.ColorUtil;
 import xyz.duncanruns.juwawi.win32.GDI32Extra;
 import xyz.duncanruns.juwawi.win32.User32Extra;
 
@@ -245,7 +246,7 @@ public class JuWaWi extends NoRepaintJFrame {
     /**
      * Draw instances and background colored boxes to the window
      *
-     * @param requests        instance draw requests
+     * @param requests     instance draw requests
      * @param bgRectangles areas to fill with background color
      */
     public synchronized void draw(List<InstanceDrawRequest> requests, List<Rectangle> bgRectangles) {
