@@ -1,10 +1,10 @@
 package xyz.duncanruns.juwawi.window;
 
+import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.WinDef.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.Level;
-import sun.awt.windows.WComponentPeer;
 import xyz.duncanruns.julti.Julti;
 import xyz.duncanruns.julti.JultiOptions;
 import xyz.duncanruns.julti.gui.JultiGUI;
@@ -26,8 +26,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.peer.ComponentPeer;
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Queue;
 import java.util.*;
@@ -182,9 +180,7 @@ public class JuWaWi extends NoRepaintJFrame {
 
     public void finishSetup() {
         this.setVisible(true);
-        if (!this.tryGrabHwnd()) {
-            throw new RuntimeException("Failed to open Wall Window! Could not obtain low level window handle.");
-        }
+        this.tryGrabHwnd();
         while (!User32Extra.INSTANCE.IsWindowVisible(this.hwnd)) {
             sleep(5);
         }
@@ -240,18 +236,13 @@ public class JuWaWi extends NoRepaintJFrame {
         User32Extra.INSTANCE.ReleaseDC(this.hwnd, hdc);
     }
 
-    private boolean tryGrabHwnd() {
+    private void tryGrabHwnd() {
         try {
-            // getPeer() might not exist depending on used java, but peer field will, so reflection hacks lolololol
-            Field peerField = Component.class.getDeclaredField("peer");
-            peerField.setAccessible(true);
-            ComponentPeer peer = (ComponentPeer) peerField.get(this);
-            long hwndLong = ((WComponentPeer) peer).getHWnd();
+            long hwndLong = Native.getWindowID(this);
             this.hwnd = new HWND(new Pointer(hwndLong));
-            return true;
         } catch (Exception e) {
             Julti.log(Level.ERROR, "JuWaWi tryGrabHwnd Error: " + ExceptionUtil.toDetailedString(e));
-            return false;
+            throw new RuntimeException(e);
         }
     }
 
