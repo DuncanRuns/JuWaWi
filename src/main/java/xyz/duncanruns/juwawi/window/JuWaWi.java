@@ -201,6 +201,7 @@ public class JuWaWi extends NoRepaintJFrame {
                 }
             }
         });
+        ActiveWindowManager.setWallOverride(this.hwnd);
     }
 
     public void onClose() {
