@@ -95,7 +95,6 @@ public class JuWaWi extends NoRepaintJFrame {
 
         List<InstanceDrawRequest> toDraw = new ArrayList<>();
         List<Rectangle> toBG = new ArrayList<>();
-        List<Rectangle> toDirt = new ArrayList<>();
 
         List<MinecraftInstance> instances = InstanceManager.getInstanceManager().getInstances();
         List<MinecraftInstance> locked = ResetHelper.getManager().getLockedInstances();
