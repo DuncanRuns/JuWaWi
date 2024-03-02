@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import static xyz.duncanruns.julti.util.SleepUtil.sleep;
 
 public class JuWaWi extends NoRepaintJFrame {
-    private static final HBRUSH BLACK_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(4));
     private static final HBRUSH DC_BRUSH = new HBRUSH(GDI32Extra.INSTANCE.GetStockObject(18));
 
     private final List<Rectangle> clearScreenRequestList;
@@ -95,7 +94,7 @@ public class JuWaWi extends NoRepaintJFrame {
         this.checkSchedule();
 
         List<InstanceDrawRequest> toDraw = new ArrayList<>();
-        List<Rectangle> toBlack = new ArrayList<>();
+        List<Rectangle> toBG = new ArrayList<>();
         List<Rectangle> toDirt = new ArrayList<>();
 
         List<MinecraftInstance> instances = InstanceManager.getInstanceManager().getInstances();
@@ -112,7 +111,7 @@ public class JuWaWi extends NoRepaintJFrame {
             }
             // Add draw requests
             toDraw.add(new InstanceDrawRequest(instance, current, locked.contains(instance), instance.shouldCoverWithDirt()));
-            toBlack.add(last);
+            toBG.add(last);
             // Prevent duplicate draw request
             this.toUpdate.removeIf(in -> in.equals(instance));
         }
@@ -121,16 +120,16 @@ public class JuWaWi extends NoRepaintJFrame {
         this.toUpdate.forEach(instance -> toDraw.add(new InstanceDrawRequest(instance, currentInstancePositions.get(InstanceManager.getInstanceManager().getInstanceIndex(instance)), locked.contains(instance), instance.shouldCoverWithDirt())));
         this.toUpdate.clear();
 
-        // Remove black draws that will be covered by an instance
-        toDraw.forEach(req -> toBlack.remove(req.rect));
+        // Remove bg draws that will be covered by an instance
+        toDraw.forEach(req -> toBG.remove(req.rect));
 
         // Remove draws outside the screen
         Rectangle screenRect = new Rectangle(0, 0, this.width, this.height);
         toDraw.removeIf(req -> !req.rect.intersects(screenRect));
-        toBlack.removeIf(rect -> !rect.intersects(screenRect));
+        toBG.removeIf(rect -> !rect.intersects(screenRect));
 
-        if (!(toDraw.isEmpty() && toBlack.isEmpty())) {
-            this.drawExecutor.execute(() -> this.draw(toDraw, toBlack));
+        if (!(toDraw.isEmpty() && toBG.isEmpty())) {
+            this.drawExecutor.execute(() -> this.draw(toDraw, toBG));
         }
         this.lastPositions = currentInstancePositions;
     }
@@ -175,7 +174,7 @@ public class JuWaWi extends NoRepaintJFrame {
             sleep(5);
         }
 
-        this.makeBufferAndFillBlack();
+        this.makeBufferAndFillBG();
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -212,7 +211,7 @@ public class JuWaWi extends NoRepaintJFrame {
         this.setIconImage(JultiGUI.getLogo());
     }
 
-    private void makeBufferAndFillBlack() {
+    private void makeBufferAndFillBG() {
         HDC hdc = User32Extra.INSTANCE.GetDC(this.hwnd);
         if (this.bufferHDC == null) {
             this.bufferHDC = GDI32Extra.INSTANCE.CreateCompatibleDC(hdc);
@@ -221,7 +220,8 @@ public class JuWaWi extends NoRepaintJFrame {
         }
         RECT rect = new RECT();
         User32Extra.INSTANCE.GetClientRect(this.hwnd, rect);
-        User32Extra.INSTANCE.FillRect(hdc, rect, BLACK_BRUSH);
+        GDI32Extra.INSTANCE.SetDCBrushColor(hdc, JuWaWiPlugin.options.bgColor);
+        User32Extra.INSTANCE.FillRect(hdc, rect, DC_BRUSH);
         User32Extra.INSTANCE.ReleaseDC(this.hwnd, hdc);
     }
 
@@ -244,15 +244,15 @@ public class JuWaWi extends NoRepaintJFrame {
     }
 
     /**
-     * Draw instances and black boxes to the window
+     * Draw instances and background colored boxes to the window
      *
      * @param requests        instance draw requests
-     * @param blackRectangles areas to fill with black
+     * @param bgRectangles areas to fill with background color
      */
-    public synchronized void draw(List<InstanceDrawRequest> requests, List<Rectangle> blackRectangles) {
+    public synchronized void draw(List<InstanceDrawRequest> requests, List<Rectangle> bgRectangles) {
         // Draw directly to wall if only 1 request that isn't a locked instance, or use a buffer
 
-        boolean useBuffer = (requests.size() + blackRectangles.size()) > 1 || requests.size() == 1 && requests.get(0).locked;
+        boolean useBuffer = (requests.size() + bgRectangles.size()) > 1 || requests.size() == 1 && requests.get(0).locked;
         HDC wallWindowHDC = User32Extra.INSTANCE.GetDC(this.hwnd);
         HDC drawHDC;
         if (useBuffer) {
@@ -263,8 +263,9 @@ public class JuWaWi extends NoRepaintJFrame {
             drawHDC = wallWindowHDC;
         }
 
-        // Fill black rectangles
-        blackRectangles.stream().map(JuWaWi::convertRectangle).forEach(rect -> User32Extra.INSTANCE.FillRect(drawHDC, rect, BLACK_BRUSH));
+        // Fill bg rectangles
+        GDI32Extra.INSTANCE.SetDCBrushColor(drawHDC, JuWaWiPlugin.options.bgColor);
+        bgRectangles.stream().map(JuWaWi::convertRectangle).forEach(rect -> User32Extra.INSTANCE.FillRect(drawHDC, rect, DC_BRUSH));
 
         // Draw instances
         for (InstanceDrawRequest request : requests) {

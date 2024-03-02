@@ -229,6 +229,18 @@ public class JuWaWiConfigGUI extends JFrame {
                 JuWaWiPlugin.options.save();
             });
         })));
+        panel.add(GUIUtil.createSpacer());
+        panel.add(GUIUtil.leftJustify(GUIUtil.getButtonWithMethod(new JButton("Choose Background Color"), e -> {
+            int c = JuWaWiPlugin.options.bgColor;
+            Color newColor = JColorChooser.showDialog(panel, "JuWaWi: Choose Background Color", new Color(getRed(c), getGreen(c), getBlue(c)));
+            if (newColor == null) {
+                return;
+            }
+            Julti.waitForExecute(() -> {
+                JuWaWiPlugin.options.bgColor = toWinColor(newColor);
+                JuWaWiPlugin.options.save();
+            });
+        })));
     }
 
     private void addWindowSettings(JPanel panel) {
