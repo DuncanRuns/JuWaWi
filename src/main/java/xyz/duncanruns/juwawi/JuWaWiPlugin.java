@@ -72,7 +72,7 @@ public class JuWaWiPlugin implements PluginInitializer {
     @Override
     public void initialize() {
         PluginEvents.RunnableEventType.END_TICK.register(() -> {
-            if(options == null) {
+            if (options == null) {
                 return;
             }
 
