@@ -2,6 +2,7 @@ package xyz.duncanruns.juwawi;
 
 import com.google.common.io.Resources;
 import xyz.duncanruns.julti.JultiAppLaunch;
+import xyz.duncanruns.julti.JultiOptions;
 import xyz.duncanruns.julti.plugin.PluginEvents;
 import xyz.duncanruns.julti.plugin.PluginInitializer;
 import xyz.duncanruns.julti.plugin.PluginManager;
@@ -29,7 +30,6 @@ public class JuWaWiPlugin implements PluginInitializer {
     }
 
     public static synchronized JuWaWi openWallWindow() {
-        options = JuWaWiOptions.load();
         if (wallWindowExists()) {
             juwawi.requestFocus();
             return juwawi;
@@ -69,9 +69,11 @@ public class JuWaWiPlugin implements PluginInitializer {
 
     @Override
     public void initialize() {
-        options = JuWaWiOptions.load();
-        options.save();
         PluginEvents.RunnableEventType.END_TICK.register(() -> {
+            if(options == null) {
+                return;
+            }
+
             if (options.enabled && !wallWindowExists()) {
                 openWallWindow();
             } else if (!options.enabled && wallWindowExists()) {
@@ -110,6 +112,10 @@ public class JuWaWiPlugin implements PluginInitializer {
         PluginEvents.RunnableEventType.WALL_ACTIVATE.register(() -> {
             juwawi.onWallActivate();
         });
+
+        // Register data savers
+        JultiOptions.registerPluginDataLoader("juwawi", data -> options = JuWaWiOptions.fromJsonObject(data));
+        JultiOptions.registerPluginDataSaver("juwawi", () -> options.asJsonObject());
     }
 
     @Override

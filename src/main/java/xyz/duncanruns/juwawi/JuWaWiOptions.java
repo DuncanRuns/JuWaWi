@@ -1,22 +1,13 @@
 package xyz.duncanruns.juwawi;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.apache.logging.log4j.Level;
-import xyz.duncanruns.julti.Julti;
-import xyz.duncanruns.julti.JultiOptions;
-import xyz.duncanruns.julti.util.ExceptionUtil;
-import xyz.duncanruns.julti.util.FileUtil;
+import com.google.gson.JsonObject;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
 public class JuWaWiOptions {
-    private static final Path OPTIONS_PATH = JultiOptions.getJultiDir().resolve("juwawi.json");
-    private final static Gson GSON_WRITER = new GsonBuilder().setPrettyPrinting().create();
+    private final static Gson GSON = new Gson();
 
     public boolean enabled = false;
     public List<Byte> updatePercents = Arrays.asList((byte) 5, (byte) 15);
@@ -31,22 +22,11 @@ public class JuWaWiOptions {
     public int dirtColor = 0x000000; // Black
     public int bgColor = 0x111111; // Dark Gray
 
-    public static JuWaWiOptions load() {
-        if (Files.exists(OPTIONS_PATH)) {
-            try {
-                return new Gson().fromJson(FileUtil.readString(OPTIONS_PATH), JuWaWiOptions.class);
-            } catch (Exception e) {
-                Julti.log(Level.ERROR, "Failed to load JuWaWi options:\n" + ExceptionUtil.toDetailedString(e));
-            }
-        }
-        return new JuWaWiOptions();
+    public static JuWaWiOptions fromJsonObject(JsonObject data) {
+        return GSON.fromJson(data, JuWaWiOptions.class);
     }
 
-    public void save() {
-        try {
-            FileUtil.writeString(OPTIONS_PATH, GSON_WRITER.toJson(this));
-        } catch (IOException e) {
-            Julti.log(Level.ERROR, "Failed to save JuWaWi options:\n" + ExceptionUtil.toDetailedString(e));
-        }
+    public JsonObject asJsonObject() {
+        return GSON.toJsonTree(this).getAsJsonObject();
     }
 }

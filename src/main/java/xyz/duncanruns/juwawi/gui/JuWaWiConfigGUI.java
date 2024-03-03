@@ -53,7 +53,6 @@ public class JuWaWiConfigGUI extends JFrame {
                 Julti.waitForExecute(() -> {
                     JuWaWiPlugin.options.x = (int) xField.getValue();
                     JuWaWiPlugin.options.y = (int) yField.getValue();
-                    JuWaWiPlugin.options.save();
                 });
             }
         };
@@ -94,7 +93,6 @@ public class JuWaWiConfigGUI extends JFrame {
                 Julti.waitForExecute(() -> {
                     JuWaWiPlugin.options.w = (int) xField.getValue();
                     JuWaWiPlugin.options.h = (int) yField.getValue();
-                    JuWaWiPlugin.options.save();
                 });
             }
         };
@@ -111,7 +109,6 @@ public class JuWaWiConfigGUI extends JFrame {
             public void mouseReleased(MouseEvent e) {
                 Julti.waitForExecute(() -> {
                     JuWaWiPlugin.options.lockedBorderThickness = slider.getValue();
-                    JuWaWiPlugin.options.save();
                 });
                 borderThicknessLabel.setText("Lock Border Thickness (" + JuWaWiPlugin.options.lockedBorderThickness + "):");
             }
@@ -147,7 +144,6 @@ public class JuWaWiConfigGUI extends JFrame {
         panel.add(GUIUtil.leftJustify(GUIUtil.createCheckBox("Enabled", "", JuWaWiPlugin.options.enabled, b -> {
             Julti.waitForExecute(() -> {
                 JuWaWiPlugin.options.enabled = b;
-                JuWaWiPlugin.options.save();
             });
             this.reload();
 
@@ -159,7 +155,6 @@ public class JuWaWiConfigGUI extends JFrame {
         panel.add(GUIUtil.leftJustify(GUIUtil.createCheckBox("Use Main Monitor", "", JuWaWiPlugin.options.useMainMonitor, b -> {
             Julti.waitForExecute(() -> {
                 JuWaWiPlugin.options.useMainMonitor = b;
-                JuWaWiPlugin.options.save();
             });
             this.reload();
         })));
@@ -173,7 +168,6 @@ public class JuWaWiConfigGUI extends JFrame {
         panel.add(GUIUtil.leftJustify(GUIUtil.createCheckBox("Show Locks", "", JuWaWiPlugin.options.showLocks, b -> {
             Julti.waitForExecute(() -> {
                 JuWaWiPlugin.options.showLocks = b;
-                JuWaWiPlugin.options.save();
             });
             this.reload();
         })));
@@ -189,7 +183,6 @@ public class JuWaWiConfigGUI extends JFrame {
                 }
                 Julti.waitForExecute(() -> {
                     JuWaWiPlugin.options.lockColor = ColorUtil.toWinColor(newColor);
-                    JuWaWiPlugin.options.save();
                 });
             })));
             panel.add(GUIUtil.createSpacer());
@@ -211,7 +204,6 @@ public class JuWaWiConfigGUI extends JFrame {
             }
             Julti.waitForExecute(() -> {
                 JuWaWiPlugin.options.dirtColor = ColorUtil.toWinColor(newColor);
-                JuWaWiPlugin.options.save();
             });
         })));
         panel.add(GUIUtil.createSpacer());
@@ -223,7 +215,6 @@ public class JuWaWiConfigGUI extends JFrame {
             }
             Julti.waitForExecute(() -> {
                 JuWaWiPlugin.options.bgColor = ColorUtil.toWinColor(newColor);
-                JuWaWiPlugin.options.save();
             });
         })));
     }
