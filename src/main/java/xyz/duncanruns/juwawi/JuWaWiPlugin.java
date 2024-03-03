@@ -3,10 +3,12 @@ package xyz.duncanruns.juwawi;
 import com.google.common.io.Resources;
 import xyz.duncanruns.julti.JultiAppLaunch;
 import xyz.duncanruns.julti.JultiOptions;
+import xyz.duncanruns.julti.command.CommandManager;
 import xyz.duncanruns.julti.plugin.PluginEvents;
 import xyz.duncanruns.julti.plugin.PluginInitializer;
 import xyz.duncanruns.julti.plugin.PluginManager;
 import xyz.duncanruns.julti.util.MonitorUtil;
+import xyz.duncanruns.juwawi.command.SetPreviewPercentsCommand;
 import xyz.duncanruns.juwawi.gui.JuWaWiConfigGUI;
 import xyz.duncanruns.juwawi.window.JuWaWi;
 
@@ -112,6 +114,9 @@ public class JuWaWiPlugin implements PluginInitializer {
         PluginEvents.RunnableEventType.WALL_ACTIVATE.register(() -> {
             juwawi.onWallActivate();
         });
+
+        // Register Commands
+        CommandManager.getMainManager().registerCommand(new SetPreviewPercentsCommand());
 
         // Register data savers
         JultiOptions.registerPluginDataLoader("juwawi", data -> options = JuWaWiOptions.fromJsonObject(data));
