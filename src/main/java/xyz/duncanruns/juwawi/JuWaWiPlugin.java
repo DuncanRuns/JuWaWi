@@ -112,7 +112,9 @@ public class JuWaWiPlugin implements PluginInitializer {
             }
         });
         PluginEvents.RunnableEventType.WALL_ACTIVATE.register(() -> {
-            juwawi.onWallActivate();
+            if (wallWindowExists()) {
+                juwawi.onWallActivate();
+            }
         });
 
         // Register Commands
