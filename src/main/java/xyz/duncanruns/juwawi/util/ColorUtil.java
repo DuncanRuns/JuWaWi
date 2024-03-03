@@ -19,7 +19,7 @@ public final class ColorUtil {
     }
 
     public static Color fromWinColor(int winColor) {
-        return new Color(getRed(winColor), getBlue(winColor), getGreen(winColor));
+        return new Color(getRed(winColor), getGreen(winColor), getBlue(winColor));
     }
 
     public static int toWinColor(Color color) {
