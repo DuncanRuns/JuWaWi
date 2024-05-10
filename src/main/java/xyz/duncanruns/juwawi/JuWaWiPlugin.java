@@ -84,39 +84,21 @@ public class JuWaWiPlugin implements PluginInitializer {
         }
     }
 
+    private static void withWallWindow(Consumer<JuWaWi> juwawiConsumer) {
+        if (wallWindowExists()) {
+            juwawiConsumer.accept(juwawi);
+        }
+    }
+
     @Override
     public void initialize() {
-        PluginEvents.RunnableEventType.ALL_INSTANCES_FOUND.register(() -> {
-            if (wallWindowExists()) {
-                juwawi.onAllInstancesFound();
-            }
-        });
-        PluginEvents.InstanceEventType.PERCENTAGE_CHANGE.register(instance -> {
-            if (wallWindowExists()) {
-                juwawi.onInstancePercentageChange(instance);
-            }
-        });
-        PluginEvents.InstanceEventType.RESET.register(instance -> {
-            if (wallWindowExists()) {
-                juwawi.onInstanceReset(instance);
-            }
-        });
-        PluginEvents.InstanceEventType.STATE_CHANGE.register(instance -> {
-            if (wallWindowExists()) {
-                juwawi.onInstanceStateChange(instance);
-            }
-        });
-        PluginEvents.InstanceEventType.LOCK.register(instance -> {
-            if (wallWindowExists()) {
-                juwawi.onInstanceLock(instance);
-            }
-        });
-        PluginEvents.RunnableEventType.WALL_ACTIVATE.register(() -> {
-            if (wallWindowExists()) {
-                juwawi.onWallActivate();
-            }
-        });
         PluginEvents.RunnableEventType.END_TICK.register(JuWaWiPlugin::tick);
+        PluginEvents.RunnableEventType.ALL_INSTANCES_FOUND.register(() -> withWallWindow(JuWaWi::onAllInstancesFound));
+        PluginEvents.InstanceEventType.PERCENTAGE_CHANGE.register(instance -> withWallWindow(j -> j.onInstancePercentageChange(instance)));
+        PluginEvents.InstanceEventType.RESET.register(instance -> withWallWindow(j -> j.onInstanceReset(instance)));
+        PluginEvents.InstanceEventType.STATE_CHANGE.register(instance -> withWallWindow(j -> j.onInstanceStateChange(instance)));
+        PluginEvents.InstanceEventType.LOCK.register(instance -> withWallWindow(j -> j.onInstanceLock(instance)));
+        PluginEvents.RunnableEventType.WALL_ACTIVATE.register(() -> withWallWindow(JuWaWi::onWallActivate));
 
         // Register Commands
         CommandManager.getMainManager().registerCommand(new SetPreviewPercentsCommand());
