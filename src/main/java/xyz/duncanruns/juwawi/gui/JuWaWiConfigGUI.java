@@ -228,8 +228,6 @@ public class JuWaWiConfigGUI extends JFrame {
     }
 
     private void setupWindow() {
-        Point location = JultiGUI.getPluginsGUI().getLocation();
-        this.setLocation(location.x, location.y + 30);
         this.setLayout(null);
         this.setTitle("JuWaWi Config");
         this.setIconImage(JultiGUI.getLogo());

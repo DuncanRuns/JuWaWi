@@ -17,6 +17,7 @@ import xyz.duncanruns.julti.resetting.ResetManager;
 import xyz.duncanruns.julti.util.ExceptionUtil;
 import xyz.duncanruns.julti.win32.Msimg32;
 import xyz.duncanruns.juwawi.JuWaWiPlugin;
+import xyz.duncanruns.juwawi.gui.JuWaWiConfigGUI;
 import xyz.duncanruns.juwawi.util.ColorUtil;
 import xyz.duncanruns.juwawi.win32.GDI32Extra;
 import xyz.duncanruns.juwawi.win32.User32Extra;
@@ -211,6 +212,8 @@ public class JuWaWi extends NoRepaintJFrame {
     }
 
     private void onPressEsc() {
+        JuWaWiConfigGUI config = JuWaWiPlugin.openConfigGUI();
+        config.setLocation(new Point(this.getX() + (this.getWidth() - config.getWidth()) / 2, this.getY() + (this.getHeight() - config.getHeight()) / 2));
     }
 
     private void setupWindow() {

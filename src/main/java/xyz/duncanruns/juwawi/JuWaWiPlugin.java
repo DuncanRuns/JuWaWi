@@ -131,7 +131,8 @@ public class JuWaWiPlugin implements PluginInitializer {
     }
 
     @Override
-    public void onMenuButtonPress() {
-        openConfigGUI();
+    public synchronized void onMenuButtonPress() {
+        Point location = JultiGUI.getPluginsGUI().getLocation();
+        openConfigGUI().setLocation(location.x, location.y + 30);
     }
 }
