@@ -69,23 +69,23 @@ public class JuWaWiPlugin implements PluginInitializer {
         }
     }
 
+    private static synchronized void tick() {
+        if (options == null) {
+            return;
+        }
+        if (options.enabled && !wallWindowExists()) {
+            openWallWindow();
+        } else if (!options.enabled && wallWindowExists()) {
+            juwawi.dispose();
+            juwawi.onClose();
+        }
+        if (wallWindowExists()) {
+            juwawi.tick();
+        }
+    }
+
     @Override
     public void initialize() {
-        PluginEvents.RunnableEventType.END_TICK.register(() -> {
-            if (options == null) {
-                return;
-            }
-
-            if (options.enabled && !wallWindowExists()) {
-                openWallWindow();
-            } else if (!options.enabled && wallWindowExists()) {
-                juwawi.dispose();
-                juwawi.onClose();
-            }
-            if (wallWindowExists()) {
-                juwawi.tick();
-            }
-        });
         PluginEvents.RunnableEventType.ALL_INSTANCES_FOUND.register(() -> {
             if (wallWindowExists()) {
                 juwawi.onAllInstancesFound();
@@ -116,6 +116,7 @@ public class JuWaWiPlugin implements PluginInitializer {
                 juwawi.onWallActivate();
             }
         });
+        PluginEvents.RunnableEventType.END_TICK.register(JuWaWiPlugin::tick);
 
         // Register Commands
         CommandManager.getMainManager().registerCommand(new SetPreviewPercentsCommand());
